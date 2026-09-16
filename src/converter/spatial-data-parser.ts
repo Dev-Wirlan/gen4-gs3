@@ -31,13 +31,13 @@ const finiteNumber = (...values: unknown[]) => {
 
 export function parseAdaptiveCurve(content: string): AdaptiveCurveGeometry {
   const json = JSON.parse(content) as Record<string, unknown>;
-  const feature = json.type === "FeatureCollection"
-    ? (json.features as Array<Record<string, unknown>> | undefined)?.[0]
+  const feature = json["type"] === "FeatureCollection"
+    ? (json["features"] as Array<Record<string, unknown>> | undefined)?.[0]
     : json;
-  const geometry = (feature?.geometry ?? json.geometry ?? json) as Record<string, unknown>;
-  const properties = (feature?.properties ?? json.properties ?? {}) as Record<string, unknown>;
-  const coordinates = geometry.coordinates as unknown;
-  const geometryType = String(geometry.type ?? "");
+  const geometry = (feature?.["geometry"] ?? json["geometry"] ?? json) as Record<string, unknown>;
+  const properties = (feature?.["properties"] ?? json["properties"] ?? {}) as Record<string, unknown>;
+  const coordinates = geometry["coordinates"] as unknown;
+  const geometryType = String(geometry["type"] ?? "");
   let lines: Array<Array<[number, number]>> = [];
   if (geometryType === "MultiLineString" && Array.isArray(coordinates)) lines = coordinates as Array<Array<[number, number]>>;
   if (geometryType === "LineString" && Array.isArray(coordinates)) lines = [coordinates as Array<[number, number]>];
@@ -45,7 +45,7 @@ export function parseAdaptiveCurve(content: string): AdaptiveCurveGeometry {
   if (!lines.length || lines.every((line) => line.length === 0)) throw new Error("AdaptiveCurve sem LineString/MultiLineString válido.");
   const first = lines[0]?.[0];
   if (!first) throw new Error("AdaptiveCurve sem coordenadas.");
-  const referenceLongitude = finiteNumber(properties.referenceLongitude, properties.ReferenceLongitude, json.referenceLongitude) ?? first[0];
-  const referenceLatitude = finiteNumber(properties.referenceLatitude, properties.ReferenceLatitude, json.referenceLatitude) ?? first[1];
+  const referenceLongitude = finiteNumber(properties["referenceLongitude"], properties["ReferenceLongitude"], json["referenceLongitude"]) ?? first[0];
+  const referenceLatitude = finiteNumber(properties["referenceLatitude"], properties["ReferenceLatitude"], json["referenceLatitude"]) ?? first[1];
   return { lines, referenceLongitude, referenceLatitude };
 }
