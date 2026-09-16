@@ -2,8 +2,9 @@ import type { AdaptiveCurveGeometry, Compatibility, SpatialElement, SpatialType 
 
 const TYPES: Array<[SpatialType, RegExp]> = [
   ["AdaptiveCurve", /adaptive[\s_-]*curve/i],
+  ["ABLine", /ab[\s_-]*line/i],
   ["ABCurve", /ab[\s_-]*curve/i],
-  ["Boundary", /boundary|limite/i],
+  ["Boundary", /operational[\s_-]*boundary|boundary|limite/i],
   ["Flags", /flags?|marcador/i],
 ];
 
@@ -18,10 +19,10 @@ export function compatibilityFor(type: SpatialType): Compatibility {
   return "pending";
 }
 
-export function createSpatialElement(path: string, content: string, fieldId?: string): SpatialElement {
-  const type = detectSpatialType(path, content);
-  const name = path.split("/").pop()?.replace(/\.gjson$/i, "") ?? path;
-  return { id: path, name, path, type, compatibility: compatibilityFor(type), ...(fieldId ? { fieldId } : {}) };
+export function createSpatialElement(path: string, content: string, fieldId?: string, guid?: string, name?: string, forcedType?: SpatialType): SpatialElement {
+  const type = forcedType ?? detectSpatialType(path, content);
+  const displayName = name ?? path.split("/").pop()?.replace(/\.gjson$/i, "") ?? path;
+  return { id: guid ?? path, ...(guid ? { guid } : {}), name: displayName, path, type, compatibility: compatibilityFor(type), ...(fieldId ? { fieldId } : {}) };
 }
 
 const finiteNumber = (...values: unknown[]) => {

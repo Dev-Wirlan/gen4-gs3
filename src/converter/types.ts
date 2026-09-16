@@ -1,8 +1,9 @@
-export type SpatialType = "AdaptiveCurve" | "ABCurve" | "Boundary" | "Flags" | "Unknown";
+export type SpatialType = "AdaptiveCurve" | "ABLine" | "ABCurve" | "Boundary" | "Flags" | "Unknown";
 export type Compatibility = "compatible" | "pending" | "unsupported";
 
 export interface SpatialElement {
   id: string;
+  guid?: string;
   name: string;
   path: string;
   type: SpatialType;
@@ -14,6 +15,10 @@ export interface FieldNode {
   id: string;
   name: string;
   spatial: SpatialElement[];
+  adaptiveCurves: SpatialElement[];
+  abLines: SpatialElement[];
+  boundaries: SpatialElement[];
+  flags: SpatialElement[];
 }
 
 export interface FarmNode {
@@ -38,6 +43,14 @@ export interface ProjectAnalysis {
   unassigned: SpatialElement[];
   spatial: SpatialElement[];
   warnings: string[];
+}
+
+export interface MasterSpatialRecord {
+  guid: string;
+  name: string;
+  fieldId?: string;
+  path?: string;
+  type: SpatialType;
 }
 
 export interface AdaptiveCurveGeometry {
