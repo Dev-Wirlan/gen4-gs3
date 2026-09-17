@@ -16,7 +16,7 @@ function StatusBadge({ type }: { type: SpatialType }) {
   return <span className={`status-chip ${compatible ? "status-good" : unknown ? "status-bad" : "status-pending"}`}>{compatible ? "Compatível" : unknown ? "Não suportado" : "Aguardando implementação"}</span>;
 }
 
-function ProjectTree({ clients, unassigned, selectedFieldId, onSelectField }: Pick<ProjectAnalysis, "clients" | "unassigned"> & { selectedFieldId?: string; onSelectField: (id: string) => void }) {
+function ProjectTree({ clients, unassigned, selectedFieldId, onSelectField }: Pick<ProjectAnalysis, "clients" | "unassigned"> & { selectedFieldId: string | undefined; onSelectField: (id: string) => void }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setOpen((value) => ({ ...value, [id]: value[id] === false ? true : false }));
   const expanded = (id: string) => open[id] !== false;
