@@ -202,6 +202,7 @@
   .facts-grid span { font-size:.65rem; color:var(--muted-foreground); }
   .facts-grid strong { font-family:var(--font-mono); font-size:.85rem; }
   .tree-leaf { display:flex; align-items:center; justify-content:space-between; gap:.75rem; min-height:2rem; padding-right:.5rem; color:var(--muted-foreground); }
+  .field-selected { border-left:2px solid var(--primary); background:color-mix(in oklab,var(--primary) 7%,transparent); }
 }
 
 @media (max-width: 520px) {

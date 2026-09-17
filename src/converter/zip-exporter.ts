@@ -11,10 +11,10 @@ export async function exportValidatedAdaptiveCurves(source: JSZip, analysis: Pro
   if (!field) throw new Error("Selecione um talhão válido para exportar.");
   for (const item of field.adaptiveCurves) {
     try {
+      if (!item.path) throw new Error("arquivo .gjson não localizado");
       const content = await source.file(item.path)?.async("text");
       if (!content) throw new Error("arquivo vazio");
       const geometry = parseAdaptiveCurve(content);
-      if (!item.path) throw new Error("arquivo .gjson não localizado");
       const fileGuid = item.guid ?? item.id;
       output.file(`AdaptiveCurve/CurveTrack${fileGuid}.fdShape`, encodeAdaptiveCurve(geometry));
       converted += 1;

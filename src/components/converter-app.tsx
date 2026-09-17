@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import JSZip from "jszip";
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Download, FileArchive, LoaderCircle, Lock, Upload } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronRight, Download, FileArchive, LoaderCircle, Lock, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { analyzeGen4Project } from "@/converter/gen4-parser";
 import type { ClientNode, ProjectAnalysis, SpatialType } from "@/converter/types";
 import { exportValidatedAdaptiveCurves } from "@/converter/zip-exporter";
 import { initializePwa } from "@/lib/pwa";
 
-const TYPE_LABELS: Record<SpatialType, string> = { AdaptiveCurve: "AdaptiveCurve", ABCurve: "ABCurve", Boundary: "Boundary", Flags: "Flags", Unknown: "Desconhecido" };
+const TYPE_LABELS: Record<SpatialType, string> = { AdaptiveCurve: "AdaptiveCurve", ABLine: "ABLine", ABCurve: "ABCurve", Boundary: "Boundary", Flags: "Flags", Unknown: "Desconhecido" };
 const formatSize = (bytes: number) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(bytes / 1024 / 1024) + " MB";
 
 function StatusBadge({ type }: { type: SpatialType }) {
@@ -16,7 +16,7 @@ function StatusBadge({ type }: { type: SpatialType }) {
   return <span className={`status-chip ${compatible ? "status-good" : unknown ? "status-bad" : "status-pending"}`}>{compatible ? "Compatível" : unknown ? "Não suportado" : "Aguardando implementação"}</span>;
 }
 
-function ProjectTree({ clients, unassigned }: Pick<ProjectAnalysis, "clients" | "unassigned">) {
+function ProjectTree({ clients, unassigned, selectedFieldId, onSelectField }: Pick<ProjectAnalysis, "clients" | "unassigned"> & { selectedFieldId?: string; onSelectField: (id: string) => void }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setOpen((value) => ({ ...value, [id]: value[id] === false ? true : false }));
   const expanded = (id: string) => open[id] !== false;
@@ -32,9 +32,11 @@ function ProjectTree({ clients, unassigned }: Pick<ProjectAnalysis, "clients" | 
   return <div className="space-y-1 font-mono text-xs">
     {clients.map((client: ClientNode) => <Branch key={client.id} id={client.id} label={`Cliente · ${client.name}`} meta={`${client.farms.length} fazenda(s)`}>
       {client.farms.map((farm) => <Branch key={farm.id} id={farm.id} label={`Fazenda · ${farm.name}`} meta={`${farm.fields.length} talhão(ões)`} depth={1}>
-        {farm.fields.map((field) => <Branch key={field.id} id={field.id} label={`Talhão · ${field.name}`} meta={`${field.spatial.length} elemento(s)`} depth={2}>
-          {field.spatial.map((item) => <div key={item.id} className="tree-leaf" style={{ paddingLeft: "4.5rem" }}><span>{item.name}</span><StatusBadge type={item.type} /></div>)}
-        </Branch>)}
+        {farm.fields.map((field) => <div key={field.id} className={selectedFieldId === field.id ? "field-selected" : undefined}>
+          <div className="flex items-center gap-1"><div className="min-w-0 flex-1"><Branch id={field.id} label={`Talhão · ${field.name}`} meta={`${field.spatial.length} elemento(s)`} depth={2}>
+            {field.spatial.map((item) => <div key={item.id} className="tree-leaf" style={{ paddingLeft: "4.5rem" }}><span className="truncate">{TYPE_LABELS[item.type]} · {item.name}</span><StatusBadge type={item.type} /></div>)}
+          </Branch></div><Button variant={selectedFieldId === field.id ? "default" : "outline"} size="sm" onClick={() => onSelectField(field.id)} aria-label={`Selecionar talhão ${field.name}`}>{selectedFieldId === field.id ? <CheckCircle2 /> : <Check />}<span className="hidden sm:inline">{selectedFieldId === field.id ? "Selecionado" : "Selecionar"}</span></Button></div>
+        </div>)}
       </Branch>)}
     </Branch>)}
     {unassigned.length > 0 && <Branch id="unassigned" label="Sem vínculo confirmado" meta={`${unassigned.length} arquivo(s)`}>
@@ -50,24 +52,27 @@ export function ConverterApp() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [message, setMessage] = useState<string>();
+  const [selectedFieldId, setSelectedFieldId] = useState<string>();
   useEffect(() => { void initializePwa(); }, []);
 
-  const counts = useMemo(() => Object.fromEntries((["AdaptiveCurve", "ABCurve", "Boundary", "Flags", "Unknown"] as SpatialType[]).map((type) => [type, analysis?.spatial.filter((item) => item.type === type).length ?? 0])) as Record<SpatialType, number>, [analysis]);
+  const counts = useMemo(() => Object.fromEntries((["AdaptiveCurve", "ABLine", "ABCurve", "Boundary", "Flags", "Unknown"] as SpatialType[]).map((type) => [type, analysis?.spatial.filter((item) => item.type === type).length ?? 0])) as Record<SpatialType, number>, [analysis]);
   const fields = analysis?.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields)).length ?? 0;
+  const associatedCurves = analysis?.spatial.filter((item) => item.type === "AdaptiveCurve" && item.fieldId && !analysis.unassigned.includes(item)).length ?? 0;
+  const selectedField = analysis?.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields)).find((field) => field.id === selectedFieldId);
 
   const inspect = async (file?: File) => {
     if (!file) return;
     setBusy(true); setMessage(undefined);
-    try { const result = await analyzeGen4Project(file); setAnalysis(result.analysis); setZip(result.zip); }
-    catch (error) { setAnalysis(undefined); setZip(undefined); setMessage(error instanceof Error ? error.message : "Não foi possível analisar o ZIP."); }
+    try { const result = await analyzeGen4Project(file); const firstField = result.analysis.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields))[0]; setAnalysis(result.analysis); setZip(result.zip); setSelectedFieldId(firstField?.id); }
+    catch (error) { setAnalysis(undefined); setZip(undefined); setSelectedFieldId(undefined); setMessage(error instanceof Error ? error.message : "Não foi possível analisar o ZIP."); }
     finally { setBusy(false); }
   };
   const drop = (event: DragEvent<HTMLDivElement>) => { event.preventDefault(); setDragging(false); void inspect(event.dataTransfer.files[0]); };
   const exportZip = async () => {
-    if (!analysis || !zip) return;
+    if (!analysis || !zip || !selectedFieldId) return;
     setBusy(true); setMessage(undefined);
     try {
-      const result = await exportValidatedAdaptiveCurves(zip, analysis);
+      const result = await exportValidatedAdaptiveCurves(zip, analysis, selectedFieldId);
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = analysis.fileName.replace(/\.zip$/i, "") + "_AdaptiveCurve_validado.zip"; anchor.click(); URL.revokeObjectURL(url);
       setMessage(`Exportação parcial concluída: ${result.converted} curva(s) convertida(s), ${result.failures.length} falha(s).`);
@@ -104,17 +109,17 @@ export function ConverterApp() {
         <section className="grid gap-5 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-5">
             <div className="flex items-center justify-between"><p className="section-kicker text-muted-foreground">Etapa 02 · Analisar</p><span className="font-mono text-[10px] text-muted-foreground">{formatSize(analysis.fileSize)}</span></div>
-            <div className="glass p-5"><div className="facts-grid"><div><span>ZIP</span><strong>Válido</strong></div><div><span>MasterData.xml</span><strong className={analysis.masterDataFound ? "text-good" : "text-danger"}>{analysis.masterDataFound ? "Encontrado" : "Ausente"}</strong></div><div><span>Arquivos .gjson</span><strong>{analysis.gjsonCount}</strong></div><div><span>Talhões</span><strong>{fields}</strong></div></div></div>
-            <div className="grid grid-cols-2 gap-3">{(["AdaptiveCurve", "ABCurve", "Boundary", "Flags"] as SpatialType[]).map((type) => <div key={type} className="glass p-4"><div className="flex items-start justify-between gap-2"><div><p className="font-mono text-2xl font-semibold text-primary">{counts[type]}</p><p className="mt-1 text-xs">{TYPE_LABELS[type]}</p></div><StatusBadge type={type} /></div></div>)}</div>
+            <div className="glass p-5"><div className="facts-grid"><div><span>ZIP</span><strong>Válido</strong></div><div><span>MasterData.xml</span><strong className={analysis.masterDataFound ? "text-good" : "text-danger"}>{analysis.masterDataFound ? "Encontrado" : "Ausente"}</strong></div><div><span>Arquivos .gjson</span><strong>{analysis.gjsonCount}</strong></div><div><span>Talhões encontrados</span><strong>{fields}</strong></div><div><span>AdaptiveCurve associadas</span><strong>{associatedCurves} / {counts.AdaptiveCurve}</strong></div><div><span>Elementos órfãos</span><strong className={analysis.unassigned.length ? "text-pending" : "text-good"}>{analysis.unassigned.length}</strong></div></div></div>
+            <div className="grid grid-cols-2 gap-3">{(["AdaptiveCurve", "ABLine", "Boundary", "Flags"] as SpatialType[]).map((type) => <div key={type} className="glass p-4"><div className="flex items-start justify-between gap-2"><div><p className="font-mono text-2xl font-semibold text-primary">{counts[type]}</p><p className="mt-1 text-xs">{TYPE_LABELS[type]}</p></div><StatusBadge type={type} /></div></div>)}</div>
             {counts.Unknown > 0 && <div className="notice danger"><AlertTriangle /><span>{counts.Unknown} elemento(s) Gen4 ainda não suportado(s) pelo conversor.</span></div>}
           </div>
-          <div className="glass p-5 lg:col-span-7"><div className="mb-4 flex items-center justify-between"><p className="section-kicker text-muted-foreground">Etapa 03 · Resumo</p><span className="font-mono text-[10px] text-muted-foreground">Cliente → Fazenda → Talhão</span></div><ProjectTree clients={analysis.clients} unassigned={analysis.unassigned} />
+          <div className="glass p-5 lg:col-span-7"><div className="mb-4 flex items-center justify-between"><p className="section-kicker text-muted-foreground">Etapa 03 · Resumo e seleção</p><span className="font-mono text-[10px] text-muted-foreground">Cliente → Fazenda → Talhão</span></div><ProjectTree clients={analysis.clients} unassigned={analysis.unassigned} selectedFieldId={selectedFieldId} onSelectField={setSelectedFieldId} />
             {analysis.warnings.length > 0 && <div className="mt-4 border-t border-border pt-4">{analysis.warnings.map((warning) => <p key={warning} className="mb-1 flex gap-2 text-xs text-pending"><AlertTriangle className="size-4 shrink-0" />{warning}</p>)}</div>}
           </div>
         </section>
         <section className="glass slash flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
-          <div><p className="section-kicker">Etapa 04 · Conversão validada</p><h2 className="mt-2 text-lg font-semibold">Exportar somente AdaptiveCurve → CurveTrack.fdShape</h2><p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">ABCurve, Boundary e Flags permanecem pendentes. O pacote não será chamado de “Projeto GS3 pronto” enquanto setup.fds, global.ver, host e a estrutura completa não forem especificados e validados.</p></div>
-          <Button variant="terminal" size="lg" onClick={() => void exportZip()} disabled={busy || counts.AdaptiveCurve === 0}><Download /> Exportar curvas validadas</Button>
+          <div><p className="section-kicker">Etapa 04 · Conversão validada</p><h2 className="mt-2 text-lg font-semibold">Exportar AdaptiveCurve do talhão selecionado</h2><p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedField ? `${selectedField.name}: ${selectedField.adaptiveCurves.length} curva(s) associada(s) por GUID.` : "Selecione um talhão na árvore."} ABLine, ABCurve, Boundary e Flags permanecem pendentes, assim como setup.fds, global.ver, host e a estrutura completa.</p></div>
+          <Button variant="terminal" size="lg" onClick={() => void exportZip()} disabled={busy || !selectedField || selectedField.adaptiveCurves.length === 0}><Download /> Exportar curvas do talhão</Button>
         </section>
       </>}
       <footer className="pb-6 text-center font-mono text-[10px] text-muted-foreground">Todo o processamento acontece neste navegador. Nenhum projeto agrícola é enviado.</footer>
