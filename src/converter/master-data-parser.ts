@@ -20,9 +20,6 @@ const identity = (element: Element, fallback: string) => ({
   name: attr(element, ["name", "designator", "label", "description"]) ?? fallback,
 });
 
-const directChildren = (element: Element, terms: string[]) =>
-  Array.from(element.children).filter((child) => terms.some((term) => elementName(child).includes(term)));
-
 const emptyField = (element: Element, fallback: string): FieldNode => ({
   ...identity(element, fallback), spatial: [], adaptiveCurves: [], abLines: [], boundaries: [], flags: [],
 });
@@ -40,9 +37,9 @@ export function parseMasterData(xmlText: string): MasterDataResult {
   const document = new DOMParser().parseFromString(xmlText, "application/xml");
   if (document.querySelector("parsererror")) throw new Error("MasterData.xml contém XML inválido.");
   const all = Array.from(document.querySelectorAll("*"));
-  const clientElements = all.filter((node) => isEntity(node, ["client", "customer", "grower"]));
-  const farmElements = all.filter((node) => isEntity(node, ["farm", "fazenda"]));
-  const fieldElements = all.filter((node) => isEntity(node, ["field", "parcel", "talhao", "talhão"]) && spatialType(node) === "Unknown");
+  const clientElements = all.filter((node) => isEntity(node, ["client", "customer", "grower"]) && guid(node));
+  const farmElements = all.filter((node) => isEntity(node, ["farm", "fazenda"]) && guid(node));
+  const fieldElements = all.filter((node) => isEntity(node, ["field", "parcel", "talhao", "talhão"]) && spatialType(node) === "Unknown" && guid(node));
   const clientNodes = clientElements.map((node, index) => ({ ...identity(node, `Cliente ${index + 1}`), farms: [] as ClientNode["farms"] }));
   const farmNodes = farmElements.map((node, index) => ({ ...identity(node, `Fazenda ${index + 1}`), parentId: taggedEntity(node), fields: [] as FieldNode[] }));
   const fields = fieldElements.map((node, index) => ({ ...emptyField(node, `Talhão ${index + 1}`), parentId: taggedEntity(node) }));
@@ -71,7 +68,8 @@ export function parseMasterData(xmlText: string): MasterDataResult {
     const objectGuid = guid(node);
     if (type === "Unknown" || !objectGuid) return [];
     const path = Array.from(node.attributes).map((item) => item.value).find((value) => value.toLowerCase().includes(".gjson"));
-    return [{ guid: objectGuid, name: attr(node, ["Name", "Designator", "Label", "Description"]) ?? objectGuid, ...(taggedEntity(node) ? { fieldId: taggedEntity(node) } : {}), ...(path ? { path } : {}), type }];
+    const fieldId = taggedEntity(node);
+    return [{ guid: objectGuid, name: attr(node, ["Name", "Designator", "Label", "Description"]) ?? objectGuid, ...(fieldId ? { fieldId } : {}), ...(path ? { path } : {}), type }];
   });
   const uniqueSpatial = [...new Map(spatial.map((item) => [item.guid, item])).values()];
   return { clients: clientNodes.filter((client) => client.farms.some((farm) => farm.fields.length)), spatial: uniqueSpatial };

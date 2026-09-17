@@ -19,7 +19,10 @@ export async function analyzeGen4Project(file: File): Promise<{ analysis: Projec
   const gjsonPaths = paths.filter((entry) => entry.toLowerCase().endsWith(".gjson"));
   const spatial = masterSpatial.map((record) => {
     const normalizedReference = record.path?.replace(/\\/g, "/").toLowerCase();
-    const path = gjsonPaths.find((entry) => entry.toLowerCase() === normalizedReference || entry.toLowerCase().endsWith(`/${normalizedReference}`) || entry.toLowerCase().includes(record.guid)) ?? "";
+    const path = gjsonPaths.find((entry) => {
+      const candidate = entry.toLowerCase();
+      return (normalizedReference ? candidate === normalizedReference || candidate.endsWith(`/${normalizedReference}`) : false) || candidate.includes(record.guid);
+    }) ?? "";
     return createSpatialElement(path, "", record.fieldId, record.guid, record.name, record.type);
   });
   const referencedPaths = new Set(spatial.map((item) => item.path).filter(Boolean));
@@ -45,6 +48,6 @@ export async function analyzeGen4Project(file: File): Promise<{ analysis: Projec
   if (unassigned.length) warnings.push(`${unassigned.length} arquivo(s) espacial(is) sem vínculo confirmado no MasterData.xml.`);
   return {
     zip,
-    analysis: { fileName: file.name, fileSize: file.size, zipStatus: "valid", masterDataFound: Boolean(masterPath), gjsonCount: spatial.length, clients, unassigned, spatial, warnings },
+    analysis: { fileName: file.name, fileSize: file.size, zipStatus: "valid", masterDataFound: Boolean(masterPath), gjsonCount: gjsonPaths.length, clients, unassigned, spatial, warnings },
   };
 }
