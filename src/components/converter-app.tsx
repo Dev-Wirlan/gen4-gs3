@@ -80,9 +80,9 @@ export function ConverterApp() {
     try {
       const result = await exportValidatedAdaptiveCurves(zip, analysis, selectedFieldId);
       const url = URL.createObjectURL(result.blob);
-      const anchor = document.createElement("a"); anchor.href = url; anchor.download = analysis.fileName.replace(/\.zip$/i, "") + "_AdaptiveCurve_validado.zip"; anchor.click(); URL.revokeObjectURL(url);
-      setMessage(`Exportação parcial concluída: ${result.converted} curva(s) convertida(s), ${result.failures.length} falha(s).`);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Falha ao exportar."); }
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = analysis.fileName.replace(/\.zip$/i, "") + "_Projeto_GS3_Construido.zip"; anchor.click(); URL.revokeObjectURL(url);
+      setMessage(`Construção concluída: ${result.converted} curva(s). A estrutura não tem todos os componentes obrigatórios resolvidos. Veja o relatório interno no ZIP gerado.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Falha ao constuir projeto GS3."); }
     finally { setBusy(false); }
   };
 
@@ -194,8 +194,8 @@ export function ConverterApp() {
           </div>
         </section>
         <section className="glass slash flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
-          <div><p className="section-kicker">Etapa 04 · Conversão validada</p><h2 className="mt-2 text-lg font-semibold">Exportar AdaptiveCurve do talhão selecionado</h2><p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedField ? `${selectedField.name}: ${selectedField.adaptiveCurves.length} curva(s) associada(s) por GUID.` : "Selecione um talhão na árvore."} ABLine, ABCurve, Boundary e Flags permanecem pendentes, assim como setup.fds, global.ver, host e a estrutura completa.</p></div>
-          <Button variant="terminal" size="lg" onClick={() => void exportZip()} disabled={busy || !selectedField || selectedField.adaptiveCurves.length === 0}><Download /> Exportar curvas do talhão</Button>
+          <div><p className="section-kicker">Etapa 04 · Builder de Projeto GS3</p><h2 className="mt-2 text-lg font-semibold">Construir pacote de projeto GS3</h2><p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedField ? `${selectedField.name}: ${selectedField.adaptiveCurves.length} AdaptiveCurve(s) para validação.` : "Selecione um talhão na árvore."} O construtor montará as pastas corretas, identificará arquivos ausentes (setup.fds, SpatialCatalog) e incluirá tudo no relatório de saída do pacote não finalizado.</p></div>
+          <Button variant="terminal" size="lg" onClick={() => void exportZip()} disabled={busy || !selectedField || selectedField.adaptiveCurves.length === 0}><Download /> Construir pacote GS3</Button>
         </section>
       </>}
       <footer className="pb-6 text-center font-mono text-[10px] text-muted-foreground">Todo o processamento acontece neste navegador. Nenhum projeto agrícola é enviado.</footer>
