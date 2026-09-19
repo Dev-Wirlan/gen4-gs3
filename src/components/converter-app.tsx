@@ -263,8 +263,8 @@ export function ConverterApp() {
           </div>
         </section>
         <section className="glass slash flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
-          <div><p className="section-kicker">Etapa 04 · Builder de Projeto GS3</p><h2 className="mt-2 text-lg font-semibold">Construir pacote de projeto GS3</h2><p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedField ? `${selectedField.name}: ${selectedField.adaptiveCurves.length} AdaptiveCurve(s) para validação.` : "Selecione um talhão na árvore."} O construtor montará as pastas corretas, identificará arquivos ausentes (setup.fds, SpatialCatalog) e incluirá tudo no relatório de saída do pacote não finalizado.</p></div>
-          <Button variant="terminal" size="lg" onClick={() => void exportZip()} disabled={busy || !selectedField || selectedField.adaptiveCurves.length === 0}><Download /> Construir pacote GS3</Button>
+          <div><p className="section-kicker">Etapa 04 · Extração Experimental</p><h2 className="mt-2 text-lg font-semibold">Baixar binários da curva</h2><p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{selectedField ? `${selectedField.name}: ${selectedField.adaptiveCurves.length} AdaptiveCurve(s) computadas.` : "Selecione um talhão na árvore."} O ZIP gerado acomoda apenas os binários .fdShape extraídos, aguardando que a inspeção da estrutura real de referência defina pastas e arquivos satélites a serem adotados futuramente.</p></div>
+          <Button variant="terminal" size="lg" onClick={() => void exportZip()} disabled={busy || !selectedField || selectedField.adaptiveCurves.length === 0}><Download /> Extrair fdShape provisório</Button>
         </section>
       </>}
       <footer className="pb-6 text-center font-mono text-[10px] text-muted-foreground">Todo o processamento acontece neste navegador. Nenhum projeto agrícola é enviado.</footer>

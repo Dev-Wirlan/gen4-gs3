@@ -67,7 +67,7 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
     }
   } else if (field?.adaptiveCurves.length) {
     status.CurveTrack = "ERRO";
-    errors.push("Talhão possui AdaptiveCurves identificadas, mas o mapeamento com os bytes CurveTrack falhou ou faltam dados.");
+    errors.push("Talhão possui AdaptiveCurves identificadas, mas a conversão não gerou saída ou faltam dados.");
   } else {
     status.CurveTrack = "OK";
   }
@@ -76,7 +76,7 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
   if (field?.boundaries.length === 0) status.Boundary = "OK";
   if (field?.flags.length === 0) status.Flags = "OK";
 
-  warnings.push("Os arquivos centrais (SpatialCatalog, setup.fds, global.ver, host) foram listados pelo builder, mas permanecem como PENDENTE pois seu formato exato ainda está em estudo.");
+  warnings.push("O construtor GS3 está em modo EXPERIMENTAL. Nenhuma estrutura de diretórios foi inventada. O ZIP gerado conterá apenas as formas codificadas no formato provisório.");
 
   const missingMandatory = status.SpatialCatalog === "PENDENTE" || status["setup.fds"] === "PENDENTE" || status["global.ver"] === "PENDENTE" || status.host === "PENDENTE";
   const valid = errors.length === 0 && !missingMandatory;
@@ -87,12 +87,7 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
 export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, fieldId: string): Promise<Gs3Project> {
   const field = getFieldFor(analysis, fieldId);
   const files: Gs3File[] = [];
-  const folders: string[] = [
-    "SpatialCatalog",
-    "Fields",
-    "CurveTracks",
-    "Boundaries"
-  ];
+  const folders: string[] = [];
 
   if (!field) {
     return {
@@ -112,7 +107,7 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
       if (!text) continue;
       const geom = parseAdaptiveCurve(text);
       files.push({
-        path: `CurveTracks/CurveTrack${curve.guid}.fdShape`,
+        path: `BINARIOS_EXPERIMENTAIS/${curve.guid}.fdShape`,
         content: encodeAdaptiveCurve(geom),
         type: "CurveTrack",
         status: "OK",
@@ -120,7 +115,7 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
       });
     } catch (e) {
       files.push({
-        path: `CurveTracks/CurveTrack${curve.guid}.fdShape`,
+        path: `BINARIOS_EXPERIMENTAIS/${curve.guid}.fdShape`,
         content: null,
         type: "CurveTrack",
         status: "ERRO",
@@ -128,15 +123,6 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
       });
     }
   }
-
-  files.push({ path: "SpatialCatalog/spatial_catalog_PENDING", content: null, type: "SpatialCatalog", status: "PENDENTE" });
-  files.push({ path: "setup.fds", content: null, type: "setup.fds", status: "PENDENTE" });
-  files.push({ path: "global.ver", content: null, type: "global.ver", status: "PENDENTE" });
-  files.push({ path: "host", content: null, type: "host", status: "PENDENTE" });
-
-  if (field.abLines.length > 0) files.push({ path: "ABLines_PENDING", content: null, type: "ABLine", status: "PENDENTE" });
-  if (field.boundaries.length > 0) files.push({ path: "Boundaries_PENDING", content: null, type: "Boundary", status: "PENDENTE" });
-  if (field.flags.length > 0) files.push({ path: "Flags_PENDING", content: null, type: "Flags", status: "PENDENTE" });
 
   const validation = validateGs3Project(files, field);
 
