@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { analyzeGen4Project } from "@/converter/gen4-parser";
 import type { ClientNode, ProjectAnalysis, SpatialType } from "@/converter/types";
 import { exportValidatedAdaptiveCurves } from "@/converter/zip-exporter";
+import { diagnoseGen4ToGs3, type DiagnosticResult } from "@/converter/gs3-diagnostic";
 import { initializePwa } from "@/lib/pwa";
 
 const TYPE_LABELS: Record<SpatialType, string> = { AdaptiveCurve: "AdaptiveCurve", ABLine: "ABLine", ABCurve: "ABCurve", Boundary: "Boundary", Flags: "Flags", Unknown: "Desconhecido" };
@@ -53,6 +54,11 @@ export function ConverterApp() {
   const [dragging, setDragging] = useState(false);
   const [message, setMessage] = useState<string>();
   const [selectedFieldId, setSelectedFieldId] = useState<string>();
+  const [diagnosticSource, setDiagnosticSource] = useState<File>();
+  const [diagnosticTarget, setDiagnosticTarget] = useState<File>();
+  const [diagnosticBusy, setDiagnosticBusy] = useState(false);
+  const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult>();
+  const [diagnosticMessage, setDiagnosticMessage] = useState<string>();
   useEffect(() => { void initializePwa(); }, []);
 
   const counts = useMemo(() => Object.fromEntries((["AdaptiveCurve", "ABLine", "ABCurve", "Boundary", "Flags", "Unknown"] as SpatialType[]).map((type) => [type, analysis?.spatial.filter((item) => item.type === type).length ?? 0])) as Record<SpatialType, number>, [analysis]);
@@ -80,6 +86,32 @@ export function ConverterApp() {
     finally { setBusy(false); }
   };
 
+  const runDiagnostic = async () => {
+    if (!diagnosticSource || !diagnosticTarget) return;
+    setDiagnosticBusy(true);
+    setDiagnosticMessage(undefined);
+    try {
+      const result = await diagnoseGen4ToGs3(diagnosticSource, diagnosticTarget);
+      setDiagnosticResult(result);
+    } catch (error) {
+      setDiagnosticResult(undefined);
+      setDiagnosticMessage(error instanceof Error ? error.message : "Não foi possível gerar o diagnóstico.");
+    } finally {
+      setDiagnosticBusy(false);
+    }
+  };
+
+  const downloadDiagnostic = () => {
+    if (!diagnosticResult) return;
+    const blob = new Blob([diagnosticResult.report], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${diagnosticResult.sourceName.replace(/\\.zip$/i, "")}_GEN4-GS3_diagnostico.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return <div className="min-h-screen bg-mesh text-foreground">
     <header className="glass slash-r sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 px-5 py-3 md:px-8">
       <div className="flex items-center gap-3"><div className="brand-mark">G3</div><div><p className="text-sm font-semibold">Gen4 → GS3 Converter</p><p className="font-mono text-[10px] text-muted-foreground">análise e conversão local</p></div></div>
@@ -102,6 +134,50 @@ export function ConverterApp() {
           </div>
           <div className="mt-3 flex items-center justify-between gap-3 font-mono text-[10px] text-muted-foreground"><span className="truncate">{analysis?.fileName ?? "Nenhum projeto selecionado"}</span><span className="shrink-0 text-good">processamento local</span></div>
         </div>
+      </section>
+
+      <section className="glass slash p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="section-kicker">Diagnóstico estrutural · Gen4 → GS3</p>
+            <h2 className="mt-2 text-xl font-semibold">Compare o projeto original com a saída real do GS5</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Selecione os dois ZIPs para identificar arquivos diretos, transformados, criados, removidos e relações por GUID. Esta etapa apenas observa o conteúdo; não altera a conversão nem cria dados.</p>
+          </div>
+          <Button variant="terminal" onClick={() => void runDiagnostic()} disabled={diagnosticBusy || !diagnosticSource || !diagnosticTarget}>
+            {diagnosticBusy ? <LoaderCircle className="animate-spin" /> : <FileArchive />}
+            {diagnosticBusy ? "Comparando…" : "Gerar diagnóstico"}
+          </Button>
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="drop-zone min-h-32 cursor-pointer p-5">
+            <input type="file" accept=".zip,application/zip" className="sr-only" onChange={(event) => { setDiagnosticSource(event.target.files?.[0]); setDiagnosticResult(undefined); }} />
+            <Upload className="size-7 text-primary" />
+            <span className="mt-2 text-sm font-semibold">ZIP Gen4 original</span>
+            <span className="mt-1 max-w-full truncate text-xs text-muted-foreground">{diagnosticSource?.name ?? "Selecionar projeto de origem"}</span>
+          </label>
+          <label className="drop-zone min-h-32 cursor-pointer p-5">
+            <input type="file" accept=".zip,application/zip" className="sr-only" onChange={(event) => { setDiagnosticTarget(event.target.files?.[0]); setDiagnosticResult(undefined); }} />
+            <Upload className="size-7 text-highlight" />
+            <span className="mt-2 text-sm font-semibold">ZIP GS3 exportado pelo GS5</span>
+            <span className="mt-1 max-w-full truncate text-xs text-muted-foreground">{diagnosticTarget?.name ?? "Selecionar saída de referência"}</span>
+          </label>
+        </div>
+        {diagnosticMessage && <div className="notice danger mt-4"><AlertTriangle /><span>{diagnosticMessage}</span></div>}
+        {diagnosticResult && <div className="mt-5 rounded-lg border border-border bg-background/50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-mono text-xs text-muted-foreground">RELATÓRIO GERADO</p>
+              <p className="mt-1 text-sm">{diagnosticResult.matches.length} arquivos GS3 comparados · {diagnosticResult.removed.length} arquivos Gen4 sem destino associado</p>
+            </div>
+            <Button variant="outline" onClick={downloadDiagnostic}><Download /> Baixar relatório</Button>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <div><span className="text-muted-foreground">Diretos</span><strong className="mt-1 block text-good">{diagnosticResult.matches.filter((item) => item.relation === "DIRETO").length}</strong></div>
+            <div><span className="text-muted-foreground">Transformados</span><strong className="mt-1 block text-primary">{diagnosticResult.matches.filter((item) => item.relation === "TRANSFORMADO").length}</strong></div>
+            <div><span className="text-muted-foreground">Criados</span><strong className="mt-1 block text-highlight">{diagnosticResult.matches.filter((item) => item.relation === "CRIADO").length}</strong></div>
+            <div><span className="text-muted-foreground">Não determinados</span><strong className="mt-1 block text-pending">{diagnosticResult.matches.filter((item) => item.confidence === "NÃO DETERMINADA" || item.confidence === "BAIXA").length}</strong></div>
+          </div>
+        </div>}
       </section>
 
       {message && <div className="notice"><AlertTriangle /><span>{message}</span></div>}
