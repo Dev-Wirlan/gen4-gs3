@@ -6,6 +6,7 @@ import { analyzeGen4Project } from "@/converter/gen4-parser";
 import type { ClientNode, ProjectAnalysis, SpatialType } from "@/converter/types";
 import { exportValidatedAdaptiveCurves } from "@/converter/zip-exporter";
 import { diagnoseGen4ToGs3, type DiagnosticResult } from "@/converter/gs3-diagnostic";
+import { inspectGs3Reference, type Gs3ReferenceInspectionResult } from "@/converter/gs3-reference-inspector";
 import { initializePwa } from "@/lib/pwa";
 
 const TYPE_LABELS: Record<SpatialType, string> = { AdaptiveCurve: "AdaptiveCurve", ABLine: "ABLine", ABCurve: "ABCurve", Boundary: "Boundary", Flags: "Flags", Unknown: "Desconhecido" };
@@ -59,6 +60,10 @@ export function ConverterApp() {
   const [diagnosticBusy, setDiagnosticBusy] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult>();
   const [diagnosticMessage, setDiagnosticMessage] = useState<string>();
+  const [referenceFile, setReferenceFile] = useState<File>();
+  const [referenceBusy, setReferenceBusy] = useState(false);
+  const [referenceResult, setReferenceResult] = useState<Gs3ReferenceInspectionResult>();
+  const [referenceMessage, setReferenceMessage] = useState<string>();
   useEffect(() => { void initializePwa(); }, []);
 
   const counts = useMemo(() => Object.fromEntries((["AdaptiveCurve", "ABLine", "ABCurve", "Boundary", "Flags", "Unknown"] as SpatialType[]).map((type) => [type, analysis?.spatial.filter((item) => item.type === type).length ?? 0])) as Record<SpatialType, number>, [analysis]);
@@ -108,6 +113,31 @@ export function ConverterApp() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `${diagnosticResult.sourceName.replace(/\\.zip$/i, "")}_GEN4-GS3_diagnostico.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const runReferenceInspection = async () => {
+    if (!referenceFile) return;
+    setReferenceBusy(true);
+    setReferenceMessage(undefined);
+    try {
+      setReferenceResult(await inspectGs3Reference(referenceFile));
+    } catch (error) {
+      setReferenceResult(undefined);
+      setReferenceMessage(error instanceof Error ? error.message : "Não foi possível inspecionar o ZIP GS3 de referência.");
+    } finally {
+      setReferenceBusy(false);
+    }
+  };
+
+  const downloadReferenceReport = () => {
+    if (!referenceResult) return;
+    const blob = new Blob([referenceResult.report], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${referenceResult.fileName.replace(/\\.zip$/i, "")}_GS3_reference_structure.txt`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -176,6 +206,45 @@ export function ConverterApp() {
             <div><span className="text-muted-foreground">Transformados</span><strong className="mt-1 block text-primary">{diagnosticResult.matches.filter((item) => item.relation === "TRANSFORMADO").length}</strong></div>
             <div><span className="text-muted-foreground">Criados</span><strong className="mt-1 block text-highlight">{diagnosticResult.matches.filter((item) => item.relation === "CRIADO").length}</strong></div>
             <div><span className="text-muted-foreground">Não determinados</span><strong className="mt-1 block text-pending">{diagnosticResult.matches.filter((item) => item.confidence === "NÃO DETERMINADA" || item.confidence === "BAIXA").length}</strong></div>
+          </div>
+        </div>}
+      </section>
+
+      <section className="glass slash p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="section-kicker">Inspeção do ZIP GS3 de referência</p>
+            <h2 className="mt-2 text-xl font-semibold">Descubra a estrutura real exportada pelo GS5</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Esta etapa somente lê o ZIP selecionado. Nenhum setup.fds, host, SpatialCatalog, pasta ou caminho é criado ou presumido.</p>
+          </div>
+          <Button variant="terminal" onClick={() => void runReferenceInspection()} disabled={referenceBusy || !referenceFile}>
+            {referenceBusy ? <LoaderCircle className="animate-spin" /> : <FileArchive />}
+            {referenceBusy ? "Inspecionando…" : "Inspecionar referência"}
+          </Button>
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+          <label className="drop-zone min-h-28 cursor-pointer p-5">
+            <input type="file" accept=".zip,application/zip" className="sr-only" onChange={(event) => { setReferenceFile(event.target.files?.[0]); setReferenceResult(undefined); setReferenceMessage(undefined); }} />
+            <Upload className="size-7 text-highlight" />
+            <span className="mt-2 text-sm font-semibold">ZIP GS3 exportado pelo GS5</span>
+            <span className="mt-1 max-w-full truncate text-xs text-muted-foreground">{referenceFile?.name ?? "Selecionar projeto GS3 de referência"}</span>
+          </label>
+          {referenceResult && <Button variant="outline" onClick={downloadReferenceReport}><Download /> Baixar relatório</Button>}
+        </div>
+        {referenceMessage && <div className="notice danger mt-4"><AlertTriangle /><span>{referenceMessage}</span></div>}
+        {referenceResult && <div className="mt-5 rounded-lg border border-border bg-background/50 p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-mono text-xs text-muted-foreground">INSPEÇÃO CONCLUÍDA</p>
+              <p className="mt-1 text-sm">{referenceResult.files.length} arquivo(s) encontrados no ZIP real, sem caminhos inventados.</p>
+            </div>
+            <span className="status-chip status-good">estrutura observada</span>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <div><span className="text-muted-foreground">Texto</span><strong className="mt-1 block text-good">{referenceResult.files.filter((file) => file.isText).length}</strong></div>
+            <div><span className="text-muted-foreground">Binário</span><strong className="mt-1 block text-primary">{referenceResult.files.filter((file) => file.isBinary).length}</strong></div>
+            <div><span className="text-muted-foreground">Com GUID</span><strong className="mt-1 block text-highlight">{referenceResult.files.filter((file) => file.guids.length > 0).length}</strong></div>
+            <div><span className="text-muted-foreground">XML</span><strong className="mt-1 block text-pending">{referenceResult.files.filter((file) => file.isXml).length}</strong></div>
           </div>
         </div>}
       </section>
