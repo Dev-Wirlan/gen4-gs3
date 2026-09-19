@@ -1,36 +1,59 @@
 import JSZip from "jszip";
 import { encodeAdaptiveCurve } from "./fdshape-encoder";
-import { parseAdaptiveCurve } from "./spatial-data-parser";
+import { convertValidatedAdaptiveCurves } from "./gs3-converter";
 import type { ProjectAnalysis } from "./types";
 
 export async function exportValidatedAdaptiveCurves(source: JSZip, analysis: ProjectAnalysis, fieldId: string) {
   const output = new JSZip();
-  const failures: string[] = [];
-  let converted = 0;
-  const field = analysis.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields)).find((entry) => entry.id === fieldId);
-  if (!field) throw new Error("Selecione um talhão válido para exportar.");
-  for (const item of field.adaptiveCurves) {
-    try {
-      if (!item.path) throw new Error("arquivo .gjson não localizado");
-      const content = await source.file(item.path)?.async("text");
-      if (!content) throw new Error("arquivo vazio");
-      const geometry = parseAdaptiveCurve(content);
-      const fileGuid = item.guid ?? item.id;
-      output.file(`AdaptiveCurve/CurveTrack${fileGuid}.fdShape`, encodeAdaptiveCurve(geometry));
-      converted += 1;
-    } catch (error) {
-      failures.push(`${item.path}: ${error instanceof Error ? error.message : "erro desconhecido"}`);
-    }
+  const result = await convertValidatedAdaptiveCurves(source, analysis, fieldId, encodeAdaptiveCurve);
+  const { validation, converted } = result;
+
+  if (!validation.valid) {
+    const details = [...validation.errors, ...validation.warnings].join(" ");
+    throw new Error(details || "A validação não permitiu gerar o pacote GS3.");
   }
-  output.file("RELATORIO.txt", [
-    "Exportação parcial validada — Gen4 → GS3 Converter",
-    `AdaptiveCurve convertidas: ${converted}`,
-    `Talhão selecionado: ${field.name} (${field.id})`,
-    `Falhas: ${failures.length}`,
-    "ABLine, ABCurve, Boundary e Flags não foram convertidos: especificação GS3 pendente.",
-    "Este pacote não é apresentado como projeto GS3 completo: setup.fds, global.ver e host ainda não foram especificados.",
-    ...failures.map((failure) => `- ${failure}`),
-  ].join("\n"));
-  if (!converted) throw new Error(failures[0] ?? "Nenhuma AdaptiveCurve compatível foi encontrada.");
-  return { blob: await output.generateAsync({ type: "blob" }), converted, failures };
+
+  for (const item of converted) output.file(item.outputPath, item.content);
+
+  const report = [
+    "RELATÓRIO DE CONVERSÃO LOCAL — GEN4 → GS3",
+    "",
+    "A conversão foi executada integralmente no dispositivo.",
+    `Talhão selecionado: ${validation.fieldName} (${validation.fieldId})`,
+    "",
+    "VALIDAÇÃO",
+    `Resultado: ${validation.valid ? "válido" : "inválido"}`,
+    `Arquivos lidos: ${validation.filesRead.length}`,
+    `Arquivos preparados para conversão: ${validation.filesToConvert.length}`,
+    `AdaptiveCurve convertidas: ${converted.length}`,
+    `Arquivos ignorados: ${validation.ignoredFiles.length}`,
+    `Avisos: ${validation.warnings.length}`,
+    `Erros: ${validation.errors.length}`,
+    "",
+    "ARQUIVOS LIDOS",
+    ...(validation.filesRead.map((file) => `- ${file}`) || ["- Nenhum"]),
+    "",
+    "ARQUIVOS GS3 GERADOS",
+    ...(converted.map((item) => `- ${item.outputPath} ← ${item.item.path}`) || ["- Nenhum"]),
+    "",
+    "ARQUIVOS IGNORADOS",
+    ...(validation.ignoredFiles.map((file) => `- ${file}`) || ["- Nenhum"]),
+    "",
+    "AVISOS",
+    ...(validation.warnings.map((warning) => `- ${warning}`) || ["- Nenhum"]),
+    "",
+    "ERROS",
+    ...(validation.errors.map((error) => `- ${error}`) || ["- Nenhum"]),
+    "",
+    "ESCOPO PENDENTE",
+    "ABLine, ABCurve, OperationalBoundary, Flags, MasterData GS3, setup.fds, global.ver, host e demais arquivos específicos do pacote GS3 ainda não foram gerados sem os ZIPs reais de referência estrutural.",
+  ].join("\n");
+
+  output.file("RELATORIO_CONVERSAO.txt", report);
+  return {
+    blob: await output.generateAsync({ type: "blob" }),
+    converted: converted.length,
+    failures: validation.errors,
+    validation,
+  };
 }
