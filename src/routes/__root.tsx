@@ -78,10 +78,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Gen4 → GS3 Converter" },
-      { name: "description", content: "Conversor local de projetos agrícolas Gen4 para GS3." },
+      { name: "description", content: "Conversor local de projetos agrícolas Gen4/GS4 para GS3." },
       { name: "author", content: "Gen4 → GS3 Converter" },
       { property: "og:title", content: "Gen4 → GS3 Converter" },
-      { property: "og:description", content: "Conversão agrícola local e offline." },
+      { property: "og:description", content: "Conversão local e offline de projetos Gen4/GS4 para GS3." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -95,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
       { rel: "icon", href: "/pwa-192.png", type: "image/png", sizes: "192x192" },
-      { rel: "theme-color", content: "#070b14" },
+      { rel: "theme-color", content: "#16A34A" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" },
@@ -109,7 +109,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
