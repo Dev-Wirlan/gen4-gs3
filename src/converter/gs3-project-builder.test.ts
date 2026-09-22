@@ -39,6 +39,25 @@ describe("validateGs3Project", () => {
     expect(result.valid).toBe(true);
   });
 
+
+  it("mantém Boundary pendente e não bloqueia a reta final quando a regra de fdShape ainda não foi comprovada", () => {
+    const field = {
+      ...emptyField,
+      boundaries: [{ id: "boundary-1", guid: "guid-1", path: "boundary.gjson", name: "Boundary 1", type: "Boundary", compatibility: "pending" }],
+    } as unknown as FieldNode;
+
+    const result = validateGs3Project([
+      { path: "setup.fds", content: new Uint8Array([1]), type: "setup.fds", status: "OK" },
+      { path: "SpatialCatalog", content: new Uint8Array([1]), type: "SpatialCatalog", status: "OK" },
+      { path: "global.ver", content: new Uint8Array(1024), type: "global.ver", status: "OK" },
+      { path: "host", content: new Uint8Array(16), type: "host", status: "OK" },
+    ], field);
+
+    expect(result.status.Boundary).toBe("PENDENTE");
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((warning) => warning.includes("Boundary permanece isolado"))).toBe(true);
+  });
+
   it("marca CurveTrack como OK quando existe uma saída codificada sem erro", () => {
     const result = validateGs3Project(
       [{ path: "curve.fdShape", content: new Uint8Array([1]), type: "CurveTrack", status: "OK" }],
