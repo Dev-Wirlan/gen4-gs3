@@ -22,6 +22,23 @@ describe("validateGs3Project", () => {
     expect(result.status.host).toBe("PENDENTE");
   });
 
+  it("reconhece as estruturas binárias e XML obrigatórias quando presentes", () => {
+    const result = validateGs3Project([
+      { path: "setup.fds", content: new Uint8Array([1]), type: "setup.fds", status: "OK" },
+      { path: "SpatialCatalog", content: new Uint8Array([1]), type: "SpatialCatalog", status: "OK" },
+      { path: "global.ver", content: new Uint8Array(1024), type: "global.ver", status: "OK" },
+      { path: "host", content: new Uint8Array(16), type: "host", status: "OK" },
+      { path: "curve.fdShape", content: new Uint8Array([1]), type: "CurveTrack", status: "OK" },
+    ], emptyField);
+
+    expect(result.status.SpatialCatalog).toBe("OK");
+    expect(result.status["setup.fds"]).toBe("OK");
+    expect(result.status["global.ver"]).toBe("OK");
+    expect(result.status.host).toBe("OK");
+    expect(result.status.CurveTrack).toBe("OK");
+    expect(result.valid).toBe(true);
+  });
+
   it("marca CurveTrack como OK quando existe uma saída codificada sem erro", () => {
     const result = validateGs3Project(
       [{ path: "curve.fdShape", content: new Uint8Array([1]), type: "CurveTrack", status: "OK" }],
