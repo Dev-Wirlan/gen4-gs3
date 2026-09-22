@@ -48,6 +48,26 @@ const xmlEscape = (value: string) =>
 
 const makeUuid = () => crypto.randomUUID();
 
+function uuidToHostBytes(uuid: string): Uint8Array {
+  const hex = uuid.replaceAll("-", "");
+  const out = new Uint8Array(16);
+  const bytes = hex.match(/.{2}/g) ?? [];
+  for (let i = 0; i < 16; i++) out[i] = Number.parseInt(bytes[i], 16);
+  // host stores the UUID in Windows GUID little-endian field order.
+  [out[0], out[3]] = [out[3], out[0]];
+  [out[1], out[2]] = [out[2], out[1]];
+  [out[4], out[5]] = [out[5], out[4]];
+  [out[6], out[7]] = [out[7], out[6]];
+  return out;
+}
+
+function buildGlobalVer(): Uint8Array {
+  const bytes = new Uint8Array(1024);
+  bytes.fill(0xff);
+  new DataView(bytes.buffer).setUint32(0, 7, true);
+  return bytes;
+}
+
 const makeXml = (text: string) => new TextEncoder().encode(text);
 
 function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clientId: string, clientName: string): string {
@@ -158,7 +178,9 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
 
   if (files.some((f) => f.type === "SpatialCatalog" && f.status === "OK")) status.SpatialCatalog = "OK";
   if (files.some((f) => f.type === "setup.fds" && f.status === "OK")) status["setup.fds"] = "OK";
-  warnings.push("SpatialCatalog e setup.fds são gerados a partir do formato observado no GS3 de referência. global.ver e host permanecem pendentes até sua engenharia reversa específica.");
+  if (files.some((f) => f.type === "global.ver" && f.status === "OK")) status["global.ver"] = "OK";
+  if (files.some((f) => f.type === "host" && f.status === "OK")) status.host = "OK";
+  warnings.push("global.ver e host seguem o formato binário observado no GS3 de referência 600057; a semântica desses bytes ainda não foi totalmente determinada.");
 
   const missingMandatory = status["global.ver"] === "PENDENTE" || status.host === "PENDENTE";
   const valid = errors.length === 0 && !missingMandatory;
@@ -207,7 +229,7 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
       });
     } catch (e) {
       files.push({
-        path: `BINARIOS_EXPERIMENTAIS/${curve.guid}.fdShape`,
+        path: `${base}/CurveTrack${curve.guid}.fdShape`,
         content: null,
         type: "CurveTrack",
         status: "ERRO",
@@ -217,6 +239,10 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
   }
 
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(field, farmId, farmName, clientId, clientName)), type: "setup.fds", status: "OK" });
+  const setupNodeMatch = buildSetupFds(field, farmId, farmName, clientId, clientName).match(/uuidSourceAppNode="\{([^}]+)\}"/);
+  const hostUuid = setupNodeMatch?.[1] ?? makeUuid();
+  files.push({ path: "GS3_2630/JD4600/RCD/EIC/host", content: uuidToHostBytes(hostUuid), type: "host", status: "OK" });
+  files.push({ path: "GS3_2630/JD4600/RCD/EIC/global.ver", content: buildGlobalVer(), type: "global.ver", status: "OK" });
   files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, clientId, clientName, farmId, farmName, curves)), type: "SpatialCatalog", status: "OK" });
 
   const validation = validateGs3Project(files, field);
