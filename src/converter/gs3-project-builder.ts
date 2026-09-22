@@ -172,7 +172,14 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
   }
 
   if (field?.abLines.length === 0) status.ABLine = "OK";
-  if (field?.boundaries.length === 0) status.Boundary = "OK";
+  if (field?.boundaries.length === 0) {
+    status.Boundary = "OK";
+  } else if (files.some((f) => f.type === "Boundary" && f.status === "OK")) {
+    status.Boundary = "OK";
+  } else {
+    status.Boundary = "PENDENTE";
+    warnings.push("Boundary permanece isolado como etapa pendente: a engenharia reversa confirmou a estrutura do fdShape e a origem dos pontos, mas ainda não confirmou a regra Gen4 → Boundary.fdShape (ordenação, ParentBoundary/Headland e 181 ocorrências adicionais). O conversor não inventará essa regra.");
+  }
   if (field?.flags.length === 0) status.Flags = "OK";
 
   if (files.some((f) => f.type === "SpatialCatalog" && f.status === "OK")) status.SpatialCatalog = "OK";
