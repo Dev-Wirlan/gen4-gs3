@@ -70,8 +70,7 @@ function buildGlobalVer(): Uint8Array {
 
 const makeXml = (text: string) => new TextEncoder().encode(text);
 
-function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clientId: string, clientName: string): string {
-  const node = makeUuid();
+function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clientId: string, clientName: string, node = makeUuid()): string {
   const now = new Date().toISOString();
   return `<?xml version="1.0" encoding="utf-8"?>
 <SetupFile xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns="urn:schemas-johndeere-com:RCD:Setup">
@@ -238,10 +237,9 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
     }
   }
 
-  files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(field, farmId, farmName, clientId, clientName)), type: "setup.fds", status: "OK" });
-  const setupNodeMatch = buildSetupFds(field, farmId, farmName, clientId, clientName).match(/uuidSourceAppNode="\{([^}]+)\}"/);
-  const hostUuid = setupNodeMatch?.[1] ?? makeUuid();
-  files.push({ path: "GS3_2630/JD4600/RCD/EIC/host", content: uuidToHostBytes(hostUuid), type: "host", status: "OK" });
+  const node = makeUuid();
+  files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(field, farmId, farmName, clientId, clientName, node)), type: "setup.fds", status: "OK" });
+  files.push({ path: "GS3_2630/JD4600/RCD/EIC/host", content: uuidToHostBytes(node), type: "host", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/global.ver", content: buildGlobalVer(), type: "global.ver", status: "OK" });
   files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, clientId, clientName, farmId, farmName, curves)), type: "SpatialCatalog", status: "OK" });
 
