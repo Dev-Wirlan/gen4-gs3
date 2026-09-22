@@ -53,26 +53,26 @@ const makeXml = (text: string) => new TextEncoder().encode(text);
 function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clientId: string, clientName: string): string {
   const node = makeUuid();
   const now = new Date().toISOString();
-  return \`<?xml version="1.0" encoding="utf-8"?>
+  return `<?xml version="1.0" encoding="utf-8"?>
 <SetupFile xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns="urn:schemas-johndeere-com:RCD:Setup">
-  <SourceApp major="10" minor="29" build="3422101" revision="0" nameSourceApp="GEN4OS" uuidSourceApp="{\${makeUuid()}}" uuidSourceAppNode="{\${node}}" uuidSession="{\${makeUuid()}}" />
+  <SourceApp major="10" minor="29" build="3422101" revision="0" nameSourceApp="GEN4OS" uuidSourceApp="{${makeUuid()}}" uuidSourceAppNode="{${node}}" uuidSession="{${makeUuid()}}" />
   <Setup>
     <FileSchemaVersion nonProductionCode="0">
       <bt:FileSchemaContentVersion major="3" minor="28" />
       <bt:UnitOfMeasureVersion major="1" minor="43" />
       <bt:RepresentationSystemVersion major="4" minor="161" />
     </FileSchemaVersion>
-    <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{\${node}}" lastSeen="\${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
+    <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
     <Participant>
-      <Client lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(clientId)}}" name="\${xmlEscape(clientName)}" />
+      <Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" />
     </Participant>
-    <Farm lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(farmId)}}" name="\${xmlEscape(farmName)}" clientRef="{\${xmlEscape(clientId)}}" />
-    <Field lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(field.id)}}" name="\${xmlEscape(field.name)}" farmRef="{\${xmlEscape(farmId))}}">
+    <Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" />
+    <Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}">
       <Area value="0" sourceUOM="ac" variableRepresentation="vrReportedFieldArea" />
     </Field>
     <Products />
   </Setup>
-</SetupFile>\`;
+</SetupFile>`;
 }
 
 function curveMbr(geometry: AdaptiveCurveGeometry) {
@@ -90,35 +90,35 @@ function buildSpatialCatalog(field: FieldNode, clientId: string, clientName: str
   const now = new Date().toISOString();
   const items = curves.map(({ guid, name, geometry }) => {
     const mbr = curveMbr(geometry);
-    return \`    <CurvedTrackLine lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(guid)}}" spatialGeometryType="point" fileName="CurveTrack\${xmlEscape(guid)}" name="\${xmlEscape(name)}">
-      <spatial:MBR uomSource="arcdeg" uomTarget="arcdeg" north="\${mbr.north}" south="\${mbr.south}" east="\${mbr.east}" west="\${mbr.west}" />
+    return `    <CurvedTrackLine lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(guid)}}" spatialGeometryType="point" fileName="CurveTrack${xmlEscape(guid)}" name="${xmlEscape(name)}">
+      <spatial:MBR uomSource="arcdeg" uomTarget="arcdeg" north="${mbr.north}" south="${mbr.south}" east="${mbr.east}" west="${mbr.west}" />
       <rcdscbase:vrEastShiftComponent value="0" sourceUOM="mm" variableRepresentation="vrEastShiftComponent" />
       <rcdscbase:vrNorthShiftComponent value="0" sourceUOM="mm" variableRepresentation="vrNorthShiftComponent" />
-      <rcdscbase:vrReferenceLatitude value="\${geometry.referenceLatitude}" sourceUOM="arcdeg" variableRepresentation="vrLatitude" />
-      <rcdscbase:vrReferenceLongitude value="\${geometry.referenceLongitude}" sourceUOM="arcdeg" variableRepresentation="vrLongitude" />
-    </CurvedTrackLine>\`;
+      <rcdscbase:vrReferenceLatitude value="${geometry.referenceLatitude}" sourceUOM="arcdeg" variableRepresentation="vrLatitude" />
+      <rcdscbase:vrReferenceLongitude value="${geometry.referenceLongitude}" sourceUOM="arcdeg" variableRepresentation="vrLongitude" />
+    </CurvedTrackLine>`;
   }).join("\\n");
 
-  return \`<?xml version="1.0" encoding="utf-8"?>
+  return `<?xml version="1.0" encoding="utf-8"?>
 <rcdscfldie:SpatialCatalog xmlns:rcdsetup="urn:schemas-johndeere-com:RCD:Setup" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns:rcdscbase="urn:schemas-johndeere-com:RCD:SpatialCatalog:Base" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:rcdscfldie="urn:schemas-johndeere-com:RCD:SpatialCatalog:FieldImportExport">
   <FileSchemaVersion nonProductionCode="0">
     <bt:FileSchemaContentVersion major="1" minor="11" />
     <bt:UnitOfMeasureVersion major="1" minor="43" />
     <bt:RepresentationSystemVersion major="4" minor="161" />
   </FileSchemaVersion>
-  <SourceApp major="2" minor="0" build="0" revision="135" nameSourceApp="RCD Target Provider" uuidSourceApp="{b050528e-f328-4dd8-9e9c-71fe8153692e}" uuidSourceAppNode="{\${node}}" uuidSession="{\${makeUuid()}}" />
+  <SourceApp major="2" minor="0" build="0" revision="135" nameSourceApp="RCD Target Provider" uuidSourceApp="{b050528e-f328-4dd8-9e9c-71fe8153692e}" uuidSourceAppNode="{${node}}" uuidSession="{${makeUuid()}}" />
   <Setup>
     <rcdsetup:FileSchemaVersion nonProductionCode="0"><bt:FileSchemaContentVersion major="3" minor="28" /><bt:UnitOfMeasureVersion major="1" minor="43" /><bt:RepresentationSystemVersion major="4" minor="161" /></rcdsetup:FileSchemaVersion>
-    <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{\${node}}" lastSeen="\${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
-    <rcdsetup:Participant><rcdsetup:Client lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(clientId)}}" name="\${xmlEscape(clientName)}" /></rcdsetup:Participant>
-    <rcdsetup:Farm lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(farmId)}}" name="\${xmlEscape(farmName)}" clientRef="{\${xmlEscape(clientId)}}" />
-    <rcdsetup:Field lastModified="\${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{\${xmlEscape(field.id)}}" name="\${xmlEscape(field.name)}" farmRef="{\${xmlEscape(farmId)}}" />
+    <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
+    <rcdsetup:Participant><rcdsetup:Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" /></rcdsetup:Participant>
+    <rcdsetup:Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" />
+    <rcdsetup:Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}" />
     <rcdsetup:Products />
   </Setup>
-  <SpatialItems eridFieldRef="{\${xmlEscape(field.id)}}">
-\${items}
+  <SpatialItems eridFieldRef="{${xmlEscape(field.id)}}">
+${items}
   </SpatialItems>
-</rcdscfldie:SpatialCatalog>\`;
+</rcdscfldie:SpatialCatalog>`;
 }
 
 export function validateGs3Project(files: Gs3File[], field: FieldNode | undefined): { status: Gs3StructureStatus; valid: boolean; errors: string[]; warnings: string[] } {
