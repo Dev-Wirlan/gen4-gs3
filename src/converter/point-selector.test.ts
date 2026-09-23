@@ -3,10 +3,12 @@ import { normalizeAdaptiveCurve } from "./point-selector";
 import type { AdaptiveCurveGeometry } from "./types";
 
 describe("AdaptiveCurve normalization", () => {
-  it("preserves point metadata and removes only leading -7000000 initialization points", () => {
+  it("preserves the two initial -7000000 points semantically and emits the first as the first geometry point", () => {
     const geometry: AdaptiveCurveGeometry = {
-      referenceLongitude: -49,
-      referenceLatitude: -22,
+      referenceLongitude: -49.1,
+      referenceLatitude: -22.1,
+      curveReference: { longitude: -49.1, latitude: -22.1, z: -7000000, originalIndex: 0, lineIndex: 0 },
+      firstGeometryPoint: { longitude: -49.2, latitude: -22.2, z: -7000000, originalIndex: 1, lineIndex: 0 },
       lines: [{
         points: [
           { longitude: -49.1, latitude: -22.1, z: -7000000, originalIndex: 0, lineIndex: 0 },
@@ -20,9 +22,11 @@ describe("AdaptiveCurve normalization", () => {
 
     const normalized = normalizeAdaptiveCurve(geometry);
 
-    expect(normalized.lines[0]?.points).toHaveLength(2);
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([2, 3]);
-    expect(normalized.lines[0]?.points[0]?.z).toBe(12);
+    expect(normalized.curveReference?.originalIndex).toBe(0);
+    expect(normalized.firstGeometryPoint?.originalIndex).toBe(1);
+    expect(normalized.lines[0]?.points).toHaveLength(3);
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
+    expect(normalized.lines[0]?.points[0]?.z).toBe(-7000000);
     expect(normalized.metadata).toEqual({ source: "fixture" });
   });
 

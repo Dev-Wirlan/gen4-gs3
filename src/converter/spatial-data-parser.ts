@@ -69,12 +69,18 @@ export function parseAdaptiveCurve(content: string): AdaptiveCurveGeometry {
   const first = lines.find((line) => line.points.length > 0)?.points[0];
   if (!first) throw new Error("AdaptiveCurve sem coordenadas.");
 
-  const referenceLongitude = finiteNumber(
+  const firstLine = lines.find((line) => line.points.length > 0);
+  const curveReference = firstLine?.points[0]?.z === -7000000 ? firstLine.points[0] : undefined;
+  const firstGeometryPoint = curveReference && firstLine.points[1]?.z === -7000000
+    ? firstLine.points[1]
+    : undefined;
+
+  const referenceLongitude = curveReference?.longitude ?? finiteNumber(
     properties["referenceLongitude"],
     properties["ReferenceLongitude"],
     json["referenceLongitude"],
   ) ?? first.longitude;
-  const referenceLatitude = finiteNumber(
+  const referenceLatitude = curveReference?.latitude ?? finiteNumber(
     properties["referenceLatitude"],
     properties["ReferenceLatitude"],
     json["referenceLatitude"],
@@ -83,6 +89,8 @@ export function parseAdaptiveCurve(content: string): AdaptiveCurveGeometry {
   return {
     referenceLongitude,
     referenceLatitude,
+    ...(curveReference ? { curveReference } : {}),
+    ...(firstGeometryPoint ? { firstGeometryPoint } : {}),
     lines,
     metadata: properties,
   };

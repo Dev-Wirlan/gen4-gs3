@@ -1,4 +1,4 @@
-import { toCurveTrackCoordinates } from "./coordinate-transformer";
+import { getCurveReference, toCurveTrackCoordinates } from "./coordinate-transformer";
 import type { NormalizedCurve } from "./types";
 
 const HEADER_VALUES = [0n, 0n, 513n, 0n, 1n, 0n, 1n] as const;
@@ -30,14 +30,17 @@ export function encodeAdaptiveCurve(input: NormalizedCurve): Uint8Array {
   writeRecord(0, 0, INITIAL_MARKER_TYPE);
   writeRecord(0, 0, INITIAL_STATE_TYPE);
 
-  const reference = {
-    referenceLongitude: input.referenceLongitude,
-    referenceLatitude: input.referenceLatitude,
-  };
+  const reference = getCurveReference(input);
 
   lines.forEach((line, lineIndex) => {
     line.points.forEach((point) => {
-      const { x, y } = toCurveTrackCoordinates(point, reference);
+      const isFirstGeometryPoint = Boolean(
+        input.firstGeometryPoint
+        && lineIndex === 0
+        && point.originalIndex === input.firstGeometryPoint.originalIndex
+        && point.lineIndex === input.firstGeometryPoint.lineIndex,
+      );
+      const { x, y } = toCurveTrackCoordinates(point, reference, isFirstGeometryPoint);
       writeRecord(x, y, GEOMETRY_POINT_TYPE);
     });
 

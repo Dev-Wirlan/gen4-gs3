@@ -69,6 +69,8 @@ export interface AdaptiveCurveGeometry {
   curveId?: string;
   referenceLongitude: number;
   referenceLatitude: number;
+  curveReference?: CurvePoint;
+  firstGeometryPoint?: CurvePoint;
   lines: AdaptiveCurveLine[];
   metadata: Record<string, unknown>;
 }
@@ -77,6 +79,8 @@ export interface NormalizedCurve {
   curveId?: string;
   referenceLongitude: number;
   referenceLatitude: number;
+  curveReference?: CurvePoint;
+  firstGeometryPoint?: CurvePoint;
   lines: AdaptiveCurveLine[];
   metadata: Record<string, unknown>;
 }

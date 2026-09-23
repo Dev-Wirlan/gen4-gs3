@@ -51,6 +51,27 @@ describe("CurveTrack fdShape", () => {
     expect(readRecord(bytes, 2)).toEqual({ x: 0.00010000000000331966, y: 0.00019999999999953388, type: 0 });
   });
 
+  it("writes firstGeometryPoint as 0,0 while subsequent points use curveReference", () => {
+    const curveReference = { longitude: -49.870430720, latitude: -21.782191390, z: -7000000, originalIndex: 0, lineIndex: 0 };
+    const firstGeometryPoint = { longitude: -49.870430716, latitude: -21.782191391, z: -7000000, originalIndex: 1, lineIndex: 0 };
+    const secondPoint = { longitude: -49.870430400, latitude: -21.782187301, originalIndex: 2, lineIndex: 0 };
+    const bytes = encodeAdaptiveCurve({
+      referenceLongitude: curveReference.longitude,
+      referenceLatitude: curveReference.latitude,
+      curveReference,
+      firstGeometryPoint,
+      lines: [{ points: [firstGeometryPoint, secondPoint] }],
+      metadata: {},
+    });
+
+    expect(readRecord(bytes, 2)).toEqual({ x: 0, y: 0, type: 0 });
+    expect(readRecord(bytes, 3)).toEqual({
+      x: 0.00000032000000516063665,
+      y: 0.0000040890000008175775,
+      type: 0,
+    });
+  });
+
   it("writes segment markers at the last preserved point", () => {
     const bytes = encodeAdaptiveCurve(makeCurve([
       [[-49, -22], [-48.9, -21.9]],
