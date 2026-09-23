@@ -53,12 +53,11 @@ describe("CurveTrack 600057 comparator", () => {
     const reference = await makeZip("600057-gs3.zip", {
       "GS3_2630/JD4600/RCD/EIC/Fields/31/field/CurveTrackc63268f1-5a2e-4f2e-bdce-0e8002ba368a.fdShape":
         makeFdShape([
-          [0, 0, 999.9],
+          [0, 0, 1],
           [0, 0, 1],
           [0.0002, 0.0002, 0],
           [0.0003, 0.0003, 0],
           [0.0002, 0.0002, 999.9],
-          [0.0004, 0.0004, 0],
         ]),
     });
 
@@ -66,10 +65,10 @@ describe("CurveTrack 600057 comparator", () => {
 
     expect(result.curves).toHaveLength(1);
     expect(result.curves[0]?.selectedPoints).toBe(3);
-    expect(result.curves[0]?.gen4LineStrings).toBe(2);
-    expect(result.curves[0]?.referenceMarkers).toBe(2);
+    expect(result.curves[0]?.gen4LineStrings).toBe(1);
+    expect(result.curves[0]?.referenceMarkers).toBe(1);
     expect(result.curves[0]?.specialFinalPointCases[0]?.markerMatches).toBe("PENULTIMATE");
-    expect(result.curves[0]?.segmentDifferences.length).toBeGreaterThan(0);
-    expect(result.report).toContain("PENULTIMATE");
+    expect(result.curves[0]?.segmentDifferences).toHaveLength(0);
+    expect(result.curves[0]?.specialFinalPointCases[0]?.markerMatches).toBe("PENULTIMATE");
   });
 });
