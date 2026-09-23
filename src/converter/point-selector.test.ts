@@ -64,83 +64,67 @@ describe("AdaptiveCurve normalization", () => {
   });
 
   it("removes a non-zero point when both deltas are strictly below 1e-7°", () => {
-    const normalized = normalizeAdaptiveCurve({
-      ...makeInitialCurve({ longitude: -49.3, latitude: -22.3 }),
-      lines: [{
-        points: [
-          { longitude: -49.1, latitude: -22.1, z: 1, originalIndex: 0, lineIndex: 0 },
-          { longitude: -49.10000005, latitude: -22.10000005, z: 1, originalIndex: 1, lineIndex: 0 },
-          { longitude: -49.2, latitude: -22.2, z: 1, originalIndex: 2, lineIndex: 0 },
-        ],
-      }],
-    });
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0, 2]);
+    const normalized = normalizeAdaptiveCurve(makeInitialCurve({
+      longitude: -49.20000005,
+      latitude: -22.20000005,
+    }));
+
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 3]);
   });
 
   it("preserves when only longitude delta is below 1e-7°", () => {
-    const normalized = normalizeAdaptiveCurve({
-      ...makeInitialCurve({ longitude: -49.3, latitude: -22.3 }),
-      lines: [{
-        points: [
-          { longitude: -49.1, latitude: -22.1, z: 1, originalIndex: 0, lineIndex: 0 },
-          { longitude: -49.10000005, latitude: -22.0999998, z: 1, originalIndex: 1, lineIndex: 0 },
-        ],
-      }],
-    });
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0, 1]);
+    const normalized = normalizeAdaptiveCurve(makeInitialCurve({
+      longitude: -49.20000005,
+      latitude: -22.1999998,
+    }));
+
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
   it("preserves when only latitude delta is below 1e-7°", () => {
-    const normalized = normalizeAdaptiveCurve({
-      ...makeInitialCurve({ longitude: -49.3, latitude: -22.3 }),
-      lines: [{
-        points: [
-          { longitude: -49.1, latitude: -22.1, z: 1, originalIndex: 0, lineIndex: 0 },
-          { longitude: -49.0999998, latitude: -22.10000005, z: 1, originalIndex: 1, lineIndex: 0 },
-        ],
-      }],
-    });
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0, 1]);
+    const normalized = normalizeAdaptiveCurve(makeInitialCurve({
+      longitude: -49.1999998,
+      latitude: -22.20000005,
+    }));
+
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
   it("preserves a component exactly at 1e-7°", () => {
-    const normalized = normalizeAdaptiveCurve({
-      ...makeInitialCurve({ longitude: -49.3, latitude: -22.3 }),
-      lines: [{
-        points: [
-          { longitude: -49.1, latitude: -22.1, z: 1, originalIndex: 0, lineIndex: 0 },
-          { longitude: -49.1000001, latitude: -22.10000005, z: 1, originalIndex: 1, lineIndex: 0 },
-        ],
-      }],
-    });
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0, 1]);
+    const normalized = normalizeAdaptiveCurve(makeInitialCurve({
+      longitude: -49.2000001,
+      latitude: -22.20000005,
+    }));
+
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
   it("removes negative deltas inside ±1e-7°", () => {
-    const normalized = normalizeAdaptiveCurve({
-      ...makeInitialCurve({ longitude: -49.3, latitude: -22.3 }),
-      lines: [{
-        points: [
-          { longitude: -49.1, latitude: -22.1, z: 1, originalIndex: 0, lineIndex: 0 },
-          { longitude: -49.10000005, latitude: -22.10000005, z: 1, originalIndex: 1, lineIndex: 0 },
-        ],
-      }],
-    });
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0]);
+    const normalized = normalizeAdaptiveCurve(makeInitialCurve({
+      longitude: -49.19999995,
+      latitude: -22.19999995,
+    }));
+
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 3]);
   });
 
   it("preserves a later exact duplicate outside the confirmed initial case", () => {
     const normalized = normalizeAdaptiveCurve({
-      ...makeInitialCurve({ longitude: -49.3, latitude: -22.3 }),
+      ...makeInitialCurve({
+        longitude: -49.3,
+        latitude: -22.3,
+      }),
       lines: [{
         points: [
-          { longitude: -49.1, latitude: -22.1, z: 1, originalIndex: 0, lineIndex: 0 },
-          { longitude: -49.3, latitude: -22.3, z: 1, originalIndex: 1, lineIndex: 0 },
+          { longitude: -49.1, latitude: -22.1, z: -7000000, originalIndex: 0, lineIndex: 0 },
+          { longitude: -49.2, latitude: -22.2, z: -7000000, originalIndex: 1, lineIndex: 0 },
           { longitude: -49.3, latitude: -22.3, z: 1, originalIndex: 2, lineIndex: 0 },
+          { longitude: -49.3, latitude: -22.3, z: 1, originalIndex: 3, lineIndex: 0 },
         ],
       }],
     });
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0, 1, 2]);
+
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
   it("does not simplify ordinary points", () => {
