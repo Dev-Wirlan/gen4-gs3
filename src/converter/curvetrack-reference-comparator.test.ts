@@ -38,9 +38,6 @@ describe("CurveTrack 600057 comparator", () => {
               [-49.0998, -22.0998, 10],
               [-49.0997, -22.0997, 11],
             ],
-            [
-              [-49.0996, -22.0996, 12],
-            ],
           ],
         },
         properties: {
@@ -69,6 +66,5 @@ describe("CurveTrack 600057 comparator", () => {
     expect(result.curves[0]?.referenceMarkers).toBe(1);
     expect(result.curves[0]?.specialFinalPointCases[0]?.markerMatches).toBe("PENULTIMATE");
     expect(result.curves[0]?.segmentDifferences).toHaveLength(0);
-    expect(result.curves[0]?.specialFinalPointCases[0]?.markerMatches).toBe("PENULTIMATE");
   });
 });
