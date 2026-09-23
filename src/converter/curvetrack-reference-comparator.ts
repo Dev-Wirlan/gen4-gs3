@@ -48,6 +48,7 @@ export interface CurveComparison {
   generatedMarkers: number;
   referenceRecordCount?: number;
   generatedRecordCount?: number;
+  spatialReference?: SpatialReferenceDiagnostic;
   firstDivergence?: {
     lineIndex: number;
     pointIndex?: number;
@@ -365,6 +366,7 @@ function compareCurve(
     referenceRecordCount: reference.recordCount,
     generatedRecordCount: generated.recordCount,
     ...(first ? { firstDivergence: first } : {}),
+    spatialReference: { referenceUsedByParser: { latitude: geometry.referenceLatitude, longitude: geometry.referenceLongitude } },
     specialFinalPointCases,
     segmentDifferences,
   };
