@@ -73,6 +73,42 @@ export interface CurveComparison {
   }>;
 }
 
+export interface LocalResyncPoint {
+  originalIndex: number;
+  lineIndex: number;
+  longitude: number;
+  latitude: number;
+  z?: number;
+  preservedBySelector: boolean;
+  transformedX: number;
+  transformedY: number;
+  referenceIndex?: number;
+  referenceX?: number;
+  referenceY?: number;
+  referenceType?: number;
+}
+
+export interface LocalResyncWindow {
+  guid: string;
+  lineIndex: number;
+  divergencePointIndex: number;
+  beforeGen4: LocalResyncPoint[];
+  afterGen4: LocalResyncPoint[];
+  beforeReference: DecodedCurveRecord[];
+  afterReference: DecodedCurveRecord[];
+  lastExactMatchBefore?: { gen4OriginalIndex: number; referenceIndex: number };
+  firstExactMatchAfter?: { gen4OriginalIndex: number; referenceIndex: number };
+  event: "A" | "B" | "C" | "UNRESOLVED";
+  divergentGen4?: LocalResyncPoint;
+  distancePrevious?: number;
+  distanceNext?: number;
+  angleDegrees?: number;
+  deltaLongitude?: number;
+  deltaLatitude?: number;
+  z?: number;
+  linePosition?: number;
+}
+
 export interface CurveComparisonReport {
   curves: CurveComparison[];
   firstDivergence?: {
@@ -302,6 +338,90 @@ function compareCurve(
     ...(first ? { firstDivergence: first } : {}),
     specialFinalPointCases,
     segmentDifferences,
+  };
+}
+
+
+function distance2d(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function angleDegrees(a: { x: number; y: number }, b: { x: number; y: number }, c: { x: number; y: number }): number {
+  const ux = a.x - b.x, uy = a.y - b.y;
+  const vx = c.x - b.x, vy = c.y - b.y;
+  const den = Math.hypot(ux, uy) * Math.hypot(vx, vy);
+  if (!den) return 0;
+  const cosine = Math.max(-1, Math.min(1, (ux * vx + uy * vy) / den));
+  return Math.acos(cosine) * 180 / Math.PI;
+}
+
+function selectedOriginalIndices(geometry: ReturnType<typeof parseAdaptiveCurve>, guid: string): Set<number> {
+  const normalized = normalizeAdaptiveCurve({ ...geometry, curveId: guid });
+  const selected = new Set<number>();
+  let global = 0;
+  for (const line of geometry.lines) {
+    const normalizedLine = normalized.lines[geometry.lines.indexOf(line)];
+    const count = normalizedLine?.points.length ?? 0;
+    for (let i = 0; i < count; i++) selected.add(global + i);
+    global += line.length;
+  }
+  return selected;
+}
+
+export function diagnoseLocalResync(
+  guid: string,
+  geometry: ReturnType<typeof parseAdaptiveCurve>,
+  referenceBytes: Uint8Array,
+  lineIndex: number,
+  divergencePointIndex: number,
+  windowRadius = 10,
+): LocalResyncWindow {
+  const reference = decodeFdShape(referenceBytes);
+  const segments = splitSegments(reference.records);
+  const segment = segments[lineIndex];
+  if (!segment) throw new Error(`LineString ${lineIndex} não encontrada no fdShape real.`);
+  const line = geometry.lines[lineIndex];
+  if (!line) throw new Error(`LineString ${lineIndex} não encontrada no Gen4.`);
+  const selected = selectedOriginalIndices(geometry, guid);
+  const start = Math.max(0, divergencePointIndex - windowRadius);
+  const end = Math.min(line.length, divergencePointIndex + windowRadius + 1);
+  const points: LocalResyncPoint[] = line.slice(start, end).map((p, local) => {
+    const originalIndex = geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + start + local;
+    const [longitude, latitude, z] = p;
+    const x = longitude - geometry.referenceLongitude;
+    const y = latitude - geometry.referenceLatitude;
+    const match = segment.points.find((r) => sameNumber(r.x, x) && sameNumber(r.y, y));
+    return { originalIndex, lineIndex, longitude, latitude, ...(Number.isFinite(z) ? { z } : {}), preservedBySelector: selected.has(originalIndex), transformedX: x, transformedY: y, ...(match ? { referenceIndex: match.index, referenceX: match.x, referenceY: match.y, referenceType: match.type } : {}) };
+  });
+  const before = points.filter((p) => p.originalIndex < (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
+  const after = points.filter((p) => p.originalIndex >= (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
+  const refStart = Math.max(0, divergencePointIndex - windowRadius);
+  const refEnd = Math.min(segment.points.length, divergencePointIndex + windowRadius + 1);
+  const beforeReference = segment.points.slice(refStart, divergencePointIndex);
+  const afterReference = segment.points.slice(divergencePointIndex, refEnd);
+  const lastExact = [...before].reverse().find((p) => p.referenceIndex !== undefined);
+  const firstExact = after.find((p) => p.referenceIndex !== undefined);
+  const divergent = points.find((p) => p.originalIndex === (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
+  const prev = divergent && before[before.length - 1];
+  const next = divergent && after[1];
+  const dxPrev = prev ? { x: prev.transformedX, y: prev.transformedY } : undefined;
+  const dxNext = next ? { x: next.transformedX, y: next.transformedY } : undefined;
+  const dxCur = divergent ? { x: divergent.transformedX, y: divergent.transformedY } : undefined;
+  const lastRef = lastExact?.referenceIndex !== undefined ? segment.points.find((r) => r.index === lastExact.referenceIndex) : undefined;
+  const firstRef = firstExact?.referenceIndex !== undefined ? segment.points.find((r) => r.index === firstExact.referenceIndex) : undefined;
+  const refHasDivergent = divergent ? segment.points.some((r) => sameNumber(r.x, divergent.transformedX) && sameNumber(r.y, divergent.transformedY)) : false;
+  const genHasRefOnly = beforeReference.length !== 0 && afterReference.length !== 0;
+  const event = refHasDivergent ? "B" : (genHasRefOnly && lastRef && firstRef ? "A" : "UNRESOLVED");
+  return {
+    guid, lineIndex, divergencePointIndex, beforeGen4: before, afterGen4: after, beforeReference, afterReference,
+    ...(lastExact ? { lastExactMatchBefore: { gen4OriginalIndex: lastExact.originalIndex, referenceIndex: lastExact.referenceIndex! } } : {}),
+    ...(firstExact ? { firstExactMatchAfter: { gen4OriginalIndex: firstExact.originalIndex, referenceIndex: firstExact.referenceIndex! } } : {}),
+    event,
+    ...(divergent ? { divergentGen4: divergent } : {}),
+    ...(divergent && dxPrev && dxCur ? { distancePrevious: distance2d(dxPrev, dxCur) } : {}),
+    ...(divergent && dxNext && dxCur ? { distanceNext: distance2d(dxCur, dxNext) } : {}),
+    ...(divergent && dxPrev && dxCur && dxNext ? { angleDegrees: angleDegrees(dxPrev, dxCur, dxNext) } : {}),
+    ...(divergent ? { deltaLongitude: divergent.longitude - line[Math.max(0, divergencePointIndex - 1)]![0], deltaLatitude: divergent.latitude - line[Math.max(0, divergencePointIndex - 1)]![1], z: divergent.z, linePosition: line.length ? divergencePointIndex / (line.length - 1) : 0 } : {}),
   };
 }
 
