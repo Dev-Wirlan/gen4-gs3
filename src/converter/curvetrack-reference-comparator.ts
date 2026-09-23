@@ -355,15 +355,11 @@ function angleDegrees(a: { x: number; y: number }, b: { x: number; y: number }, 
   return Math.acos(cosine) * 180 / Math.PI;
 }
 
-function selectedOriginalIndices(geometry: ReturnType<typeof parseAdaptiveCurve>, guid: string): Set<number> {
+function selectedOriginalIndices(geometry: ReturnType<typeof parseAdaptiveCurve>, guid: string): Set<string> {
   const normalized = normalizeAdaptiveCurve({ ...geometry, curveId: guid });
-  const selected = new Set<number>();
-  let global = 0;
-  for (const line of geometry.lines) {
-    const normalizedLine = normalized.lines[geometry.lines.indexOf(line)];
-    const count = normalizedLine?.points.length ?? 0;
-    for (let i = 0; i < count; i++) selected.add(global + i);
-    global += line.length;
+  const selected = new Set<string>();
+  for (const line of normalized.lines) {
+    for (const point of line.points) selected.add(`${point[0]}|${point[1]}|${point[2] ?? ""}`);
   }
   return selected;
 }
@@ -391,7 +387,7 @@ export function diagnoseLocalResync(
     const x = longitude - geometry.referenceLongitude;
     const y = latitude - geometry.referenceLatitude;
     const match = segment.points.find((r) => sameNumber(r.x, x) && sameNumber(r.y, y));
-    return { originalIndex, lineIndex, longitude, latitude, ...(Number.isFinite(z) ? { z } : {}), preservedBySelector: selected.has(originalIndex), transformedX: x, transformedY: y, ...(match ? { referenceIndex: match.index, referenceX: match.x, referenceY: match.y, referenceType: match.type } : {}) };
+    return { originalIndex, lineIndex, longitude, latitude, ...(Number.isFinite(z) ? { z } : {}), preservedBySelector: selected.has(`${longitude}|${latitude}|${z ?? ""}`), transformedX: x, transformedY: y, ...(match ? { referenceIndex: match.index, referenceX: match.x, referenceY: match.y, referenceType: match.type } : {}) };
   });
   const before = points.filter((p) => p.originalIndex < (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
   const after = points.filter((p) => p.originalIndex >= (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
