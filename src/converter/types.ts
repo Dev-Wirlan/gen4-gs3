@@ -53,8 +53,40 @@ export interface MasterSpatialRecord {
   type: SpatialType;
 }
 
+export interface CurvePoint {
+  longitude: number;
+  latitude: number;
+  z?: number;
+  originalIndex: number;
+  lineIndex: number;
+}
+
+export interface AdaptiveCurveLine {
+  points: CurvePoint[];
+}
+
 export interface AdaptiveCurveGeometry {
-  lines: Array<Array<[number, number]>>;
+  curveId?: string;
   referenceLongitude: number;
   referenceLatitude: number;
+  curveReference?: CurvePoint;
+  firstGeometryPoint?: CurvePoint;
+  lines: AdaptiveCurveLine[];
+  metadata: Record<string, unknown>;
+}
+
+export interface NormalizedCurve {
+  curveId?: string;
+  referenceLongitude: number;
+  referenceLatitude: number;
+  curveReference?: CurvePoint;
+  firstGeometryPoint?: CurvePoint;
+  lines: AdaptiveCurveLine[];
+  metadata: Record<string, unknown>;
+}
+
+export interface CurveTrackRecord {
+  x: number;
+  y: number;
+  type: number;
 }
