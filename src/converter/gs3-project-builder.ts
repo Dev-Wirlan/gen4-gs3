@@ -1,6 +1,8 @@
 import JSZip from "jszip";
 import { parseAdaptiveCurve } from "./spatial-data-parser";
 import { encodeAdaptiveCurve } from "./fdshape-encoder";
+import { normalizeAdaptiveCurve } from "./point-selector";
+import { buildSpatialCatalog } from "./spatial-catalog-builder";
 import type { ProjectAnalysis, FieldNode, AdaptiveCurveGeometry } from "./types";
 
 export type Gs3FileType = "CurveTrack" | "SpatialCatalog" | "setup.fds" | "global.ver" | "host" | "ABLine" | "Boundary" | "Flags";
@@ -94,52 +96,6 @@ function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clien
 </SetupFile>`;
 }
 
-function curveMbr(geometry: AdaptiveCurveGeometry) {
-  const points = geometry.lines.flat();
-  return {
-    north: Math.max(...points.map((p) => p[1])),
-    south: Math.min(...points.map((p) => p[1])),
-    east: Math.max(...points.map((p) => p[0])),
-    west: Math.min(...points.map((p) => p[0])),
-  };
-}
-
-function buildSpatialCatalog(field: FieldNode, clientId: string, clientName: string, farmId: string, farmName: string, curves: Array<{ guid: string; name: string; geometry: AdaptiveCurveGeometry }>): string {
-  const node = makeUuid();
-  const now = new Date().toISOString();
-  const items = curves.map(({ guid, name, geometry }) => {
-    const mbr = curveMbr(geometry);
-    return `    <CurvedTrackLine lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(guid)}}" spatialGeometryType="point" fileName="CurveTrack${xmlEscape(guid)}" name="${xmlEscape(name)}">
-      <spatial:MBR uomSource="arcdeg" uomTarget="arcdeg" north="${mbr.north}" south="${mbr.south}" east="${mbr.east}" west="${mbr.west}" />
-      <rcdscbase:vrEastShiftComponent value="0" sourceUOM="mm" variableRepresentation="vrEastShiftComponent" />
-      <rcdscbase:vrNorthShiftComponent value="0" sourceUOM="mm" variableRepresentation="vrNorthShiftComponent" />
-      <rcdscbase:vrReferenceLatitude value="${geometry.referenceLatitude}" sourceUOM="arcdeg" variableRepresentation="vrLatitude" />
-      <rcdscbase:vrReferenceLongitude value="${geometry.referenceLongitude}" sourceUOM="arcdeg" variableRepresentation="vrLongitude" />
-    </CurvedTrackLine>`;
-  }).join("\\n");
-
-  return `<?xml version="1.0" encoding="utf-8"?>
-<rcdscfldie:SpatialCatalog xmlns:rcdsetup="urn:schemas-johndeere-com:RCD:Setup" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns:rcdscbase="urn:schemas-johndeere-com:RCD:SpatialCatalog:Base" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:rcdscfldie="urn:schemas-johndeere-com:RCD:SpatialCatalog:FieldImportExport">
-  <FileSchemaVersion nonProductionCode="0">
-    <bt:FileSchemaContentVersion major="1" minor="11" />
-    <bt:UnitOfMeasureVersion major="1" minor="43" />
-    <bt:RepresentationSystemVersion major="4" minor="161" />
-  </FileSchemaVersion>
-  <SourceApp major="2" minor="0" build="0" revision="135" nameSourceApp="RCD Target Provider" uuidSourceApp="{b050528e-f328-4dd8-9e9c-71fe8153692e}" uuidSourceAppNode="{${node}}" uuidSession="{${makeUuid()}}" />
-  <Setup>
-    <rcdsetup:FileSchemaVersion nonProductionCode="0"><bt:FileSchemaContentVersion major="3" minor="28" /><bt:UnitOfMeasureVersion major="1" minor="43" /><bt:RepresentationSystemVersion major="4" minor="161" /></rcdsetup:FileSchemaVersion>
-    <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
-    <rcdsetup:Participant><rcdsetup:Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" /></rcdsetup:Participant>
-    <rcdsetup:Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" />
-    <rcdsetup:Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}" />
-    <rcdsetup:Products />
-  </Setup>
-  <SpatialItems eridFieldRef="{${xmlEscape(field.id)}}">
-${items}
-  </SpatialItems>
-</rcdscfldie:SpatialCatalog>`;
-}
-
 export function validateGs3Project(files: Gs3File[], field: FieldNode | undefined): { status: Gs3StructureStatus; valid: boolean; errors: string[]; warnings: string[] } {
   const status: Gs3StructureStatus = {
     AdaptiveCurve: field?.adaptiveCurves.length ? "OK" : "PENDENTE",
@@ -224,11 +180,12 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
     try {
       const text = await source.file(curve.path)?.async("text");
       if (!text) continue;
-      const geom = parseAdaptiveCurve(text);
+      const geom = { ...parseAdaptiveCurve(text), curveId: curve.guid };
+      const normalized = normalizeAdaptiveCurve(geom);
       curves.push({ guid: curve.guid, name: curve.name, geometry: geom });
       files.push({
         path: `${base}/CurveTrack${curve.guid}.fdShape`,
-        content: encodeAdaptiveCurve(geom),
+        content: encodeAdaptiveCurve(normalized),
         type: "CurveTrack",
         status: "OK",
         gen4Path: curve.path
@@ -248,7 +205,7 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(field, farmId, farmName, clientId, clientName, node)), type: "setup.fds", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/host", content: uuidToHostBytes(node), type: "host", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/global.ver", content: buildGlobalVer(), type: "global.ver", status: "OK" });
-  files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, clientId, clientName, farmId, farmName, curves)), type: "SpatialCatalog", status: "OK" });
+  files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, curves, clientId, clientName, farmId, farmName)), type: "SpatialCatalog", status: "OK" });
 
   const validation = validateGs3Project(files, field);
 

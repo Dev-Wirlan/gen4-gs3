@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { parseAdaptiveCurve } from "./spatial-data-parser";
-import type { ProjectAnalysis, SpatialElement } from "./types";
+import { normalizeAdaptiveCurve } from "./point-selector";
+import type { NormalizedCurve, ProjectAnalysis, SpatialElement } from "./types";
 
 export interface ConversionValidation {
   valid: boolean;
@@ -110,7 +111,7 @@ export async function convertValidatedAdaptiveCurves(
   source: JSZip,
   analysis: ProjectAnalysis,
   fieldId: string,
-  encode: (geometry: ReturnType<typeof parseAdaptiveCurve>) => Uint8Array,
+  encode: (geometry: NormalizedCurve) => Uint8Array,
 ): Promise<{ validation: ConversionValidation; converted: ConvertedAdaptiveCurve[] }> {
   const validation = await validateAdaptiveCurveConversion(source, analysis, fieldId);
   if (!validation.valid) return { validation, converted: [] };
@@ -123,7 +124,7 @@ export async function convertValidatedAdaptiveCurves(
     if (!item.path || !validation.filesToConvert.includes(item.path) || !item.guid) continue;
     const text = await source.file(item.path)?.async("text");
     if (!text) continue;
-    const geometry = parseAdaptiveCurve(text);
+    const geometry = normalizeAdaptiveCurve({ ...parseAdaptiveCurve(text), curveId: item.guid });
     converted.push({
       item,
       outputPath: `AdaptiveCurve/CurveTrack${item.guid}.fdShape`,
