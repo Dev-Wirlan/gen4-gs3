@@ -101,8 +101,14 @@ export interface LocalResyncWindow {
   firstExactMatchAfter?: { gen4OriginalIndex: number; referenceIndex: number };
   event: "A" | "B" | "C" | "UNRESOLVED";
   divergentGen4?: LocalResyncPoint;
-  distancePrevious?: number;
-  distanceNext?: number;
+  distancePreviousCoordinateUnits?: number;
+  distancePreviousMeters?: number;
+  distancePreviousRawPredecessorMeters?: number;
+  distancePreviousLastKeptMeters?: number;
+  distanceNextCoordinateUnits?: number;
+  distanceNextMeters?: number;
+  distanceNextRawSuccessorMeters?: number;
+  distanceNextFirstKeptMeters?: number;
   angleDegrees?: number;
   deltaLongitude?: number;
   deltaLatitude?: number;
@@ -373,6 +379,12 @@ function compareCurve(
 }
 
 
+function distanceMetersLonLat(lon1: number, lat1: number, lon2: number, lat2: number): number {
+  const R = 6371000;
+  const meanLat = (lat1 + lat2) * Math.PI / 360;
+  return Math.hypot((lon2 - lon1) * Math.PI / 180 * R * Math.cos(meanLat), (lat2 - lat1) * Math.PI / 180 * R);
+}
+
 function distance2d(a: { x: number; y: number }, b: { x: number; y: number }): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
@@ -436,6 +448,12 @@ export function diagnoseLocalResync(
   const dxPrev = prev ? { x: prev.transformedX, y: prev.transformedY } : undefined;
   const dxNext = next ? { x: next.transformedX, y: next.transformedY } : undefined;
   const dxCur = divergent ? { x: divergent.transformedX, y: divergent.transformedY } : undefined;
+  const previousRaw = divergentPointIndex > 0 ? line[divergencePointIndex - 1] : undefined;
+  const nextRaw = divergencePointIndex + 1 < line.length ? line[divergencePointIndex + 1] : undefined;
+  const lastKept = lastExact ? line[lastExact.gen4OriginalIndex] : undefined;
+  const firstKept = firstExact ? line[firstExact.gen4OriginalIndex] : undefined;
+  const coordDistancePrevious = divergent && previousRaw ? Math.hypot(divergent.longitude - previousRaw[0], divergent.latitude - previousRaw[1]) : undefined;
+  const coordDistanceNext = divergent && nextRaw ? Math.hypot(divergent.longitude - nextRaw[0], divergent.latitude - nextRaw[1]) : undefined;
   const refHasDivergent = divergent ? exactCoordinateIndex(segment.points, divergent.transformedX, divergent.transformedY) !== undefined : false;
   const event = refHasDivergent ? "B" : (lastExact && firstExact ? "A" : "UNRESOLVED");
   return { guid, lineIndex, divergencePointIndex, beforeGen4: before, afterGen4: after, beforeReference: segment.points.slice(Math.max(0, divergencePointIndex - windowRadius), divergencePointIndex), afterReference: segment.points.slice(divergencePointIndex, Math.min(segment.points.length, divergencePointIndex + windowRadius + 1)), ...(lastExact ? { lastExactMatchBefore: { gen4OriginalIndex: lastExact.originalIndex, referenceIndex: lastExact.referenceIndex! } } : {}), ...(firstExact ? { firstExactMatchAfter: { gen4OriginalIndex: firstExact.originalIndex, referenceIndex: firstExact.referenceIndex! } } : {}), event, ...(divergent ? { divergentGen4: divergent } : {}), ...(divergent && dxPrev && dxCur ? { distancePrevious: distance2d(dxPrev, dxCur) } : {}), ...(divergent && dxNext && dxCur ? { distanceNext: distance2d(dxCur, dxNext) } : {}), ...(divergent && dxPrev && dxCur && dxNext ? { angleDegrees: angleDegrees(dxPrev, dxCur, dxNext) } : {}), ...(divergent ? { deltaLongitude: divergent.longitude - line[Math.max(0, divergencePointIndex - 1)]![0], deltaLatitude: divergent.latitude - line[Math.max(0, divergencePointIndex - 1)]![1], z: divergent.z, linePosition: line.length ? divergencePointIndex / (line.length - 1) : 0 } : {}), spatialReference: { ...(referenceFromGS3SpatialCatalog ? { referenceFromGS3SpatialCatalog } : {}), referenceUsedByParser, ...(referenceDelta ? { referenceDelta } : {}), selectionFirstDivergence: { lineIndex, pointIndex: divergencePointIndex } } };
