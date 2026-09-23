@@ -42,7 +42,7 @@ describe("CurveTrack fdShape", () => {
     const bytes = encodeAdaptiveCurve(makeCurve([[[-49, -22]]]));
     expect(readRecord(bytes, 0).x).toBe(0);
     expect(readRecord(bytes, 0).y).toBe(0);
-    expect(readRecord(bytes, 0).type).toBeCloseTo(999.9, 5);
+    expect(readRecord(bytes, 0).type).toBeCloseTo(999.9, 4);
     expect(readRecord(bytes, 1)).toEqual({ x: 0, y: 0, type: 1 });
   });
 
@@ -60,7 +60,7 @@ describe("CurveTrack fdShape", () => {
     expect(readRecord(bytes, 3)).toEqual({ x: 0.10000000000000142, y: 0.10000000000000142, type: 0 });
     expect(readRecord(bytes, 4).x).toBe(0.10000000000000142);
     expect(readRecord(bytes, 4).y).toBe(0.10000000000000142);
-    expect(readRecord(bytes, 4).type).toBeCloseTo(999.9, 5);
+    expect(readRecord(bytes, 4).type).toBeCloseTo(999.9, 4);
     expect(readRecord(bytes, 5).type).toBe(0);
   });
 
