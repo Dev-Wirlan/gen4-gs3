@@ -14,7 +14,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npx vite preview --host 127.0.0.1 --port 4173",
+    command: "npx wrangler dev --config .output/server/wrangler.json --ip 127.0.0.1 --port 4173",
+    gracefulShutdown: { signal: "SIGTERM", timeout: 5_000 },
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
