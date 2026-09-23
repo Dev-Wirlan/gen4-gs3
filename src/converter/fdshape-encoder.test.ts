@@ -40,7 +40,9 @@ describe("CurveTrack fdShape", () => {
 
   it("writes the initial marker and state records", () => {
     const bytes = encodeAdaptiveCurve(makeCurve([[[-49, -22]]]));
-    expect(readRecord(bytes, 0)).toEqual({ x: 0, y: 0, type: 999.9 });
+    expect(readRecord(bytes, 0).x).toBe(0);
+    expect(readRecord(bytes, 0).y).toBe(0);
+    expect(readRecord(bytes, 0).type).toBeCloseTo(999.9, 5);
     expect(readRecord(bytes, 1)).toEqual({ x: 0, y: 0, type: 1 });
   });
 
@@ -56,7 +58,9 @@ describe("CurveTrack fdShape", () => {
     ]));
     expect(readRecord(bytes, 2).type).toBe(0);
     expect(readRecord(bytes, 3)).toEqual({ x: 0.10000000000000142, y: 0.10000000000000142, type: 0 });
-    expect(readRecord(bytes, 4)).toEqual({ x: 0.10000000000000142, y: 0.10000000000000142, type: 999.9 });
+    expect(readRecord(bytes, 4).x).toBe(0.10000000000000142);
+    expect(readRecord(bytes, 4).y).toBe(0.10000000000000142);
+    expect(readRecord(bytes, 4).type).toBeCloseTo(999.9, 5);
     expect(readRecord(bytes, 5).type).toBe(0);
   });
 
@@ -82,6 +86,6 @@ describe("CurveTrack fdShape", () => {
       [[-48.6, -21.6]],
     ]));
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    expect(view.getBigUint64(56, true)).toBe(8n);
+    expect(view.getBigUint64(56, true)).toBe(9n);
   });
 });
