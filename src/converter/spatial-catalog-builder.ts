@@ -22,7 +22,6 @@ function curveMbr(geometry: AdaptiveCurveGeometry) {
 const makeUuid = () => crypto.randomUUID();
 
 export function buildSpatialCatalog(
-  field: FieldNode,
   curves: SpatialCatalogCurve[],
   clientId: string,
   clientName: string,
