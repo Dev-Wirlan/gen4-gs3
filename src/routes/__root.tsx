@@ -80,6 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Gen4 → GS3 Converter" },
       { name: "description", content: "Conversor local de projetos agrícolas Gen4/GS4 para GS3." },
       { name: "author", content: "Gen4 → GS3 Converter" },
+      { name: "theme-color", content: "#16A34A" },
       { property: "og:title", content: "Gen4 → GS3 Converter" },
       { property: "og:description", content: "Conversão local e offline de projetos Gen4/GS4 para GS3." },
       { property: "og:type", content: "website" },
