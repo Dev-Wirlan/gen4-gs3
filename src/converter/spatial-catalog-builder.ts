@@ -22,6 +22,7 @@ function curveMbr(geometry: AdaptiveCurveGeometry) {
 const makeUuid = () => crypto.randomUUID();
 
 export function buildSpatialCatalog(
+  field: Pick<FieldNode, "id">,
   curves: SpatialCatalogCurve[],
   clientId: string,
   clientName: string,
@@ -54,7 +55,7 @@ export function buildSpatialCatalog(
     <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
     <rcdsetup:Participant><rcdsetup:Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" /></rcdsetup:Participant>
     <rcdsetup:Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" /></rcdsetup:Farm>
-    <rcdsetup:Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}" /></rcdsetup:Field>
+    <rcdsetup:Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}" /></rcdsetup:Field>
     <rcdsetup:Products />
   </Setup>
   <SpatialItems eridFieldRef="{${xmlEscape(field.id)}}">
