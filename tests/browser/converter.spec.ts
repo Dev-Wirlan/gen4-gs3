@@ -63,7 +63,7 @@ test.describe("Gen4 → GS3 Converter", () => {
       mimeType: "application/zip",
       buffer: Buffer.from("PK\\x03\\x04"),
     });
-    await expect(page.getByText("fixture-gen4.zip")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "fixture-gen4.zip" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Converter para GS3" })).toBeVisible();
     await expect(page.getByText("Lendo projeto Gen4...")).toBeVisible();
   });
@@ -80,11 +80,15 @@ test.describe("Gen4 → GS3 Converter", () => {
     });
 
     await expect(page.getByRole("button", { name: "Converter para GS3" })).toBeVisible();
-    const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Converter para GS3" }).click();
 
     await expect(page.getByText("Projeto GS3 pronto")).toBeVisible();
+    const downloadLink = page.getByRole("link", { name: "Baixar projeto GS3" });
+    await expect(downloadLink).toBeVisible();
+    const downloadPromise = page.waitForEvent("download");
+    await downloadLink.click();
     const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("fixture-gen4_GS3.zip");
     const output = await download.createReadStream();
     const chunks: Buffer[] = [];
     for await (const chunk of output) chunks.push(Buffer.from(chunk));
