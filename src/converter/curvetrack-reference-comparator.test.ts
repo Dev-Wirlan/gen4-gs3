@@ -67,7 +67,7 @@ describe("CurveTrack 600057 comparator", () => {
     expect(result.curves).toHaveLength(1);
     expect(result.curves[0]?.selectedPoints).toBe(3);
     expect(result.curves[0]?.gen4LineStrings).toBe(2);
-    expect(result.curves[0]?.referenceMarkers).toBe(1);
+    expect(result.curves[0]?.referenceMarkers).toBe(2);
     expect(result.curves[0]?.specialFinalPointCases[0]?.markerMatches).toBe("PENULTIMATE");
     expect(result.curves[0]?.segmentDifferences).toHaveLength(0);
   });
