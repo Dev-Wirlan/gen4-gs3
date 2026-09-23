@@ -69,16 +69,31 @@ export function parseAdaptiveCurve(content: string): AdaptiveCurveGeometry {
   const first = lines.find((line) => line.points.length > 0)?.points[0];
   if (!first) throw new Error("AdaptiveCurve sem coordenadas.");
 
-  const referenceLongitude = finiteNumber(
+  const explicitReferenceLongitude = finiteNumber(
     properties["referenceLongitude"],
     properties["ReferenceLongitude"],
     json["referenceLongitude"],
-  ) ?? first.longitude;
-  const referenceLatitude = finiteNumber(
+  );
+  const explicitReferenceLatitude = finiteNumber(
     properties["referenceLatitude"],
     properties["ReferenceLatitude"],
     json["referenceLatitude"],
-  ) ?? first.latitude;
+  );
+
+  // Real Gen4 AdaptiveCurves store the higher-precision spatial reference
+  // in the second leading -7000000 initialization point. MasterData.xml
+  // contains a reference too, but its precision can be lower than the
+  // geometry record.
+  const initializationReference = lines[0]?.points.find(
+    (point, index) => index > 0 && point.z === -7000000,
+  );
+
+  const referenceLongitude = explicitReferenceLongitude
+    ?? initializationReference?.longitude
+    ?? first.longitude;
+  const referenceLatitude = explicitReferenceLatitude
+    ?? initializationReference?.latitude
+    ?? first.latitude;
 
   return {
     referenceLongitude,
