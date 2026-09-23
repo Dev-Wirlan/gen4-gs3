@@ -29,6 +29,8 @@ export interface DecodedCurveSegment {
   marker?: DecodedCurveRecord;
 }
 
+export type DivergenceReason = "SELEÇÃO" | "COORDENADA" | "SEGMENTAÇÃO" | "MARKER" | "FORMATO";
+
 export interface CurveComparison {
   guid: string;
   gen4Path?: string;
@@ -49,7 +51,7 @@ export interface CurveComparison {
   firstDivergence?: {
     lineIndex: number;
     pointIndex?: number;
-    reason: "SELEÇÃO" | "COORDENADA" | "SEGMENTAÇÃO" | "MARKER" | "FORMATO";
+    reason: DivergenceReason;
     gen4?: CurvePoint;
     reference?: DecodedCurveRecord;
     generated?: DecodedCurveRecord;
@@ -77,7 +79,7 @@ export interface CurveComparisonReport {
     guid: string;
     lineIndex: number;
     pointIndex?: number;
-    reason: CurveComparison["firstDivergence"]["reason"];
+    reason: DivergenceReason;
   };
   report: string;
 }
