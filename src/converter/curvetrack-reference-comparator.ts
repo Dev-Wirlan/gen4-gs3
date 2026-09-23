@@ -209,6 +209,35 @@ function transformed(point: CurvePoint, referenceLongitude: number, referenceLat
   };
 }
 
+
+function parseSpatialCatalogReference(xml: string, guid: string, path: string): { latitude: number; longitude: number; path: string } | undefined {
+  const guidEscaped = guid.replace(/[.*+?^$()|[\\]\\\\]/g, "\\\\$&");
+  const block = xml.match(new RegExp("<(?:[A-Za-z0-9_]+:)?CurvedTrackLine\\\\b[\\\\s\\\\S]*?erid=\"\\\\{?" + guidEscaped + "\\\\}?\"[\\\\s\\\\S]*?</(?:[A-Za-z0-9_]+:)?CurvedTrackLine>", "i"))?.[0];
+  if (!block) return undefined;
+  const lat = block.match(/variableRepresentation="vrLatitude"[^>]*value="([^"]+)"/i)?.[1];
+  const lon = block.match(/variableRepresentation="vrLongitude"[^>]*value="([^"]+)"/i)?.[1];
+  if (lat === undefined || lon === undefined) return undefined;
+  const latitude = Number(lat);
+  const longitude = Number(lon);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined;
+  return { latitude, longitude, path };
+}
+
+async function findSpatialCatalogReference(zip: JSZip, guid: string): Promise<{ latitude: number; longitude: number; path: string } | undefined> {
+  const entries = Object.values(zip.files).filter((entry) => !entry.dir && /(?:ImportExport|SpatialCatalog)/i.test(entry.name));
+  for (const entry of entries) {
+    const text = await entry.async("text");
+    const result = parseSpatialCatalogReference(text, guid, entry.name);
+    if (result) return result;
+  }
+  return undefined;
+}
+
+function exactCoordinateIndex(records: DecodedCurveRecord[], x: number, y: number): number | undefined {
+  const index = records.findIndex((record) => sameNumber(record.x, x) && sameNumber(record.y, y));
+  return index >= 0 ? index : undefined;
+}
+
 function recordMatchesPoint(record: DecodedCurveRecord | undefined, point: CurvePoint | undefined, refLon: number, refLat: number): boolean {
   if (!record || !point) return false;
   const expected = transformed(point, refLon, refLat);
@@ -371,54 +400,43 @@ export function diagnoseLocalResync(
   lineIndex: number,
   divergencePointIndex: number,
   windowRadius = 10,
-): LocalResyncWindow {
+  referenceFromGS3SpatialCatalog?: { latitude: number; longitude: number; path: string },
+): LocalResyncWindow & { spatialReference: SpatialReferenceDiagnostic } {
   const reference = decodeFdShape(referenceBytes);
   const segments = splitSegments(reference.records);
   const segment = segments[lineIndex];
-  if (!segment) throw new Error(`LineString ${lineIndex} não encontrada no fdShape real.`);
+  if (!segment) throw new Error("LineString " + lineIndex + " não encontrada no fdShape real.");
   const line = geometry.lines[lineIndex];
-  if (!line) throw new Error(`LineString ${lineIndex} não encontrada no Gen4.`);
+  if (!line) throw new Error("LineString " + lineIndex + " não encontrada no Gen4.");
+  const referenceUsedByParser = { latitude: geometry.referenceLatitude, longitude: geometry.referenceLongitude };
+  const referenceDelta = referenceFromGS3SpatialCatalog ? { latitude: referenceFromGS3SpatialCatalog.latitude - referenceUsedByParser.latitude, longitude: referenceFromGS3SpatialCatalog.longitude - referenceUsedByParser.longitude } : undefined;
   const selected = selectedOriginalIndices(geometry, guid);
   const start = Math.max(0, divergencePointIndex - windowRadius);
   const end = Math.min(line.length, divergencePointIndex + windowRadius + 1);
+  const baseIndex = geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0);
   const points: LocalResyncPoint[] = line.slice(start, end).map((p, local) => {
-    const originalIndex = geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + start + local;
+    const originalIndex = baseIndex + start + local;
     const [longitude, latitude, z] = p;
-    const x = longitude - geometry.referenceLongitude;
-    const y = latitude - geometry.referenceLatitude;
-    const match = segment.points.find((r) => sameNumber(r.x, x) && sameNumber(r.y, y));
-    return { originalIndex, lineIndex, longitude, latitude, ...(Number.isFinite(z) ? { z } : {}), preservedBySelector: selected.has(`${longitude}|${latitude}|${z ?? ""}`), transformedX: x, transformedY: y, ...(match ? { referenceIndex: match.index, referenceX: match.x, referenceY: match.y, referenceType: match.type } : {}) };
+    const x = longitude - (referenceFromGS3SpatialCatalog?.longitude ?? geometry.referenceLongitude);
+    const y = latitude - (referenceFromGS3SpatialCatalog?.latitude ?? geometry.referenceLatitude);
+    const matchIndex = exactCoordinateIndex(segment.points, x, y);
+    const match = matchIndex === undefined ? undefined : segment.points[matchIndex];
+    return { originalIndex, lineIndex, longitude, latitude, ...(Number.isFinite(z) ? { z } : {}), preservedBySelector: selected.has(String(longitude) + "|" + String(latitude) + "|" + String(z ?? "")), transformedX: x, transformedY: y, ...(match ? { referenceIndex: match.index, referenceX: match.x, referenceY: match.y, referenceType: match.type } : {}) };
   });
-  const before = points.filter((p) => p.originalIndex < (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
-  const after = points.filter((p) => p.originalIndex >= (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
-  const refStart = Math.max(0, divergencePointIndex - windowRadius);
-  const refEnd = Math.min(segment.points.length, divergencePointIndex + windowRadius + 1);
-  const beforeReference = segment.points.slice(refStart, divergencePointIndex);
-  const afterReference = segment.points.slice(divergencePointIndex, refEnd);
+  const absoluteDivergenceIndex = baseIndex + divergencePointIndex;
+  const before = points.filter((p) => p.originalIndex < absoluteDivergenceIndex);
+  const after = points.filter((p) => p.originalIndex >= absoluteDivergenceIndex);
   const lastExact = [...before].reverse().find((p) => p.referenceIndex !== undefined);
   const firstExact = after.find((p) => p.referenceIndex !== undefined);
-  const divergent = points.find((p) => p.originalIndex === (geometry.lines.slice(0, lineIndex).reduce((n, l) => n + l.length, 0) + divergencePointIndex));
+  const divergent = points.find((p) => p.originalIndex === absoluteDivergenceIndex);
   const prev = divergent && before[before.length - 1];
   const next = divergent && after[1];
   const dxPrev = prev ? { x: prev.transformedX, y: prev.transformedY } : undefined;
   const dxNext = next ? { x: next.transformedX, y: next.transformedY } : undefined;
   const dxCur = divergent ? { x: divergent.transformedX, y: divergent.transformedY } : undefined;
-  const lastRef = lastExact?.referenceIndex !== undefined ? segment.points.find((r) => r.index === lastExact.referenceIndex) : undefined;
-  const firstRef = firstExact?.referenceIndex !== undefined ? segment.points.find((r) => r.index === firstExact.referenceIndex) : undefined;
-  const refHasDivergent = divergent ? segment.points.some((r) => sameNumber(r.x, divergent.transformedX) && sameNumber(r.y, divergent.transformedY)) : false;
-  const genHasRefOnly = beforeReference.length !== 0 && afterReference.length !== 0;
-  const event = refHasDivergent ? "B" : (genHasRefOnly && lastRef && firstRef ? "A" : "UNRESOLVED");
-  return {
-    guid, lineIndex, divergencePointIndex, beforeGen4: before, afterGen4: after, beforeReference, afterReference,
-    ...(lastExact ? { lastExactMatchBefore: { gen4OriginalIndex: lastExact.originalIndex, referenceIndex: lastExact.referenceIndex! } } : {}),
-    ...(firstExact ? { firstExactMatchAfter: { gen4OriginalIndex: firstExact.originalIndex, referenceIndex: firstExact.referenceIndex! } } : {}),
-    event,
-    ...(divergent ? { divergentGen4: divergent } : {}),
-    ...(divergent && dxPrev && dxCur ? { distancePrevious: distance2d(dxPrev, dxCur) } : {}),
-    ...(divergent && dxNext && dxCur ? { distanceNext: distance2d(dxCur, dxNext) } : {}),
-    ...(divergent && dxPrev && dxCur && dxNext ? { angleDegrees: angleDegrees(dxPrev, dxCur, dxNext) } : {}),
-    ...(divergent ? { deltaLongitude: divergent.longitude - line[Math.max(0, divergencePointIndex - 1)]![0], deltaLatitude: divergent.latitude - line[Math.max(0, divergencePointIndex - 1)]![1], z: divergent.z, linePosition: line.length ? divergencePointIndex / (line.length - 1) : 0 } : {}),
-  };
+  const refHasDivergent = divergent ? exactCoordinateIndex(segment.points, divergent.transformedX, divergent.transformedY) !== undefined : false;
+  const event = refHasDivergent ? "B" : (lastExact && firstExact ? "A" : "UNRESOLVED");
+  return { guid, lineIndex, divergencePointIndex, beforeGen4: before, afterGen4: after, beforeReference: segment.points.slice(Math.max(0, divergencePointIndex - windowRadius), divergencePointIndex), afterReference: segment.points.slice(divergencePointIndex, Math.min(segment.points.length, divergencePointIndex + windowRadius + 1)), ...(lastExact ? { lastExactMatchBefore: { gen4OriginalIndex: lastExact.originalIndex, referenceIndex: lastExact.referenceIndex! } } : {}), ...(firstExact ? { firstExactMatchAfter: { gen4OriginalIndex: firstExact.originalIndex, referenceIndex: firstExact.referenceIndex! } } : {}), event, ...(divergent ? { divergentGen4: divergent } : {}), ...(divergent && dxPrev && dxCur ? { distancePrevious: distance2d(dxPrev, dxCur) } : {}), ...(divergent && dxNext && dxCur ? { distanceNext: distance2d(dxCur, dxNext) } : {}), ...(divergent && dxPrev && dxCur && dxNext ? { angleDegrees: angleDegrees(dxPrev, dxCur, dxNext) } : {}), ...(divergent ? { deltaLongitude: divergent.longitude - line[Math.max(0, divergencePointIndex - 1)]![0], deltaLatitude: divergent.latitude - line[Math.max(0, divergencePointIndex - 1)]![1], z: divergent.z, linePosition: line.length ? divergencePointIndex / (line.length - 1) : 0 } : {}), spatialReference: { ...(referenceFromGS3SpatialCatalog ? { referenceFromGS3SpatialCatalog } : {}), referenceUsedByParser, ...(referenceDelta ? { referenceDelta } : {}), selectionFirstDivergence: { lineIndex, pointIndex: divergencePointIndex } } };
 }
 
 export async function compare600057(gen4File: File, gs3File: File, curveGuids: readonly string[] = GS3_600057_CURVE_GUIDS): Promise<CurveComparisonReport> {
