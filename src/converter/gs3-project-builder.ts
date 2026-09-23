@@ -180,7 +180,7 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
     try {
       const text = await source.file(curve.path)?.async("text");
       if (!text) continue;
-      const geom = parseAdaptiveCurve(text);
+      const geom = { ...parseAdaptiveCurve(text), curveId: curve.guid };
       const normalized = normalizeAdaptiveCurve(geom);
       curves.push({ guid: curve.guid, name: curve.name, geometry: geom });
       files.push({
