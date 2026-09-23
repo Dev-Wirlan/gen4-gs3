@@ -30,6 +30,10 @@ async function makeMinimalGen4Zip() {
 
 
 test.describe("Gen4 → GS3 Converter", () => {
+  test.beforeEach(async ({ page }) => {
+    page.on("pageerror", (error) => console.log(`[PAGE_ERROR] ${error.stack ?? error.message}`));
+    page.on("console", (message) => { if (message.type() === "error") console.log(`[CONSOLE_ERROR] ${message.text()}`); });
+  });
   test("carrega a tela principal com identidade verde", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/Gen4 → GS3 Converter/);
@@ -55,11 +59,11 @@ test.describe("Gen4 → GS3 Converter", () => {
     await page.goto("/");
     const input = page.locator('input[type="file"]');
     await input.setInputFiles({
-      name: "600057.zip",
+      name: "fixture-gen4.zip",
       mimeType: "application/zip",
       buffer: Buffer.from("PK\\x03\\x04"),
     });
-    await expect(page.getByText("600057.zip")).toBeVisible();
+    await expect(page.getByText("fixture-gen4.zip")).toBeVisible();
     await expect(page.getByRole("button", { name: "Converter para GS3" })).toBeVisible();
     await expect(page.getByText("Lendo projeto Gen4...")).toBeVisible();
   });
