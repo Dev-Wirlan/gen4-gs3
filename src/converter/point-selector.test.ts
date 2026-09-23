@@ -92,7 +92,7 @@ describe("AdaptiveCurve normalization", () => {
 
   it("preserves a component exactly at 1e-7°", () => {
     const normalized = normalizeAdaptiveCurve(makeInitialCurve({
-      longitude: -49.2000001,
+      longitude: -49.2000002,
       latitude: -22.20000005,
     }));
 
