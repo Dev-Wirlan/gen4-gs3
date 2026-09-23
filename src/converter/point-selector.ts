@@ -50,13 +50,32 @@ export function normalizeAdaptiveCurve(geometry: AdaptiveCurveGeometry): Normali
     }
   }
 
+  // Controlled 600057 experiment: omit only non-zero displacements whose
+  // longitude and latitude deltas are both strictly smaller than 1e-7°.
+  // This is intentionally not a distance/angle/RDP rule.
+  const POINT_DELTA_EPSILON = 1e-7;
+  const filteredLines = lines.map((line) => ({
+    points: line.points.filter((point, index, points) => {
+      if (index === 0) return true;
+      const predecessor = points[index - 1];
+      const deltaLongitude = point.longitude - predecessor.longitude;
+      const deltaLatitude = point.latitude - predecessor.latitude;
+      const isExactDuplicate = deltaLongitude === 0 && deltaLatitude === 0;
+      if (isExactDuplicate) return true;
+      return !(
+        Math.abs(deltaLongitude) < POINT_DELTA_EPSILON &&
+        Math.abs(deltaLatitude) < POINT_DELTA_EPSILON
+      );
+    }),
+  }));
+
   return {
     curveId: geometry.curveId,
     referenceLongitude: geometry.referenceLongitude,
     referenceLatitude: geometry.referenceLatitude,
     ...(curveReference ? { curveReference } : {}),
     ...(firstGeometryPoint ? { firstGeometryPoint } : {}),
-    lines,
+    lines: filteredLines,
     metadata: geometry.metadata,
   };
 }
