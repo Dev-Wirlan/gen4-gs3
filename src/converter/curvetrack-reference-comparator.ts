@@ -240,7 +240,12 @@ function compareCurve(
         break;
       }
     }
-    if (expectedPoints !== generatedPoints || Boolean(refSegment?.marker) !== Boolean(genSegment?.marker) || firstPointDifference !== undefined) {
+    const markerDifference = Boolean(refSegment?.marker) !== Boolean(genSegment?.marker)
+      || (refSegment?.marker && genSegment?.marker
+        && (!sameNumber(refSegment.marker.x, genSegment.marker.x)
+          || !sameNumber(refSegment.marker.y, genSegment.marker.y)
+          || !sameNumber(refSegment.marker.type, genSegment.marker.type, TYPE_EPSILON)));
+    if (expectedPoints !== generatedPoints || markerDifference || firstPointDifference !== undefined) {
       segmentDifferences.push({
         lineIndex,
         expectedPoints,
@@ -264,11 +269,11 @@ function compareCurve(
       specialFinalPointCases.push({ lineIndex, ...(last ? { gen4Last: last } : {}), ...(penultimate ? { gen4Penultimate: penultimate } : {}), ...(marker ? { referenceMarker: marker } : {}), markerMatches });
     }
 
-    if (!firstDivergence && (expectedPoints !== generatedPoints || firstPointDifference !== undefined || Boolean(refSegment?.marker) !== Boolean(genSegment?.marker))) {
+    if (!firstDivergence && (expectedPoints !== generatedPoints || firstPointDifference !== undefined || markerDifference)) {
       firstDivergence = {
         lineIndex,
         ...(firstPointDifference !== undefined ? { pointIndex: firstPointDifference } : {}),
-        reason: summarizeReason(refSegment, genSegment, gen4Line),
+        reason: markerDifference && expectedPoints === generatedPoints && firstPointDifference === undefined ? "MARKER" : summarizeReason(refSegment, genSegment, gen4Line),
         ...(gen4Line?.points[firstPointDifference ?? 0] ? { gen4: gen4Line.points[firstPointDifference ?? 0] } : {}),
         ...(refSegment?.points[firstPointDifference ?? 0] ? { reference: refSegment.points[firstPointDifference ?? 0] } : {}),
         ...(genSegment?.points[firstPointDifference ?? 0] ? { generated: genSegment.points[firstPointDifference ?? 0] } : {}),
