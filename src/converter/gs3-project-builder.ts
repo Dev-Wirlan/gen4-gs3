@@ -3,9 +3,10 @@ import { parseAdaptiveCurve } from "./spatial-data-parser";
 import { encodeAdaptiveCurve } from "./fdshape-encoder";
 import { normalizeAdaptiveCurve } from "./point-selector";
 import { buildSpatialCatalog } from "./spatial-catalog-builder";
+import { buildWaterManagementSpatialCatalog } from "./water-management-builder";
 import type { ProjectAnalysis, FieldNode, AdaptiveCurveGeometry } from "./types";
 
-export type Gs3FileType = "CurveTrack" | "SpatialCatalog" | "setup.fds" | "global.ver" | "host" | "ABLine" | "Boundary" | "Flags";
+export type Gs3FileType = "CurveTrack" | "SpatialCatalog" | "WaterManagement" | "setup.fds" | "global.ver" | "host" | "ABLine" | "Boundary" | "Flags";
 export type Gs3Status = "OK" | "PENDENTE" | "ERRO";
 
 export interface Gs3File {
@@ -23,6 +24,7 @@ export interface Gs3StructureStatus {
   Boundary: Gs3Status;
   Flags: Gs3Status;
   SpatialCatalog: Gs3Status;
+  WaterManagement: Gs3Status;
   "setup.fds": Gs3Status;
   "global.ver": Gs3Status;
   host: Gs3Status;
@@ -97,6 +99,7 @@ export function validateGs3Project(files: Gs3File[], fields: FieldNode[]): { sta
     Boundary: "PENDENTE",
     Flags: "PENDENTE",
     SpatialCatalog: "PENDENTE",
+    WaterManagement: "PENDENTE",
     "setup.fds": "PENDENTE",
     "global.ver": "PENDENTE",
     host: "PENDENTE",
@@ -152,6 +155,7 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
   if (fields.length === 0) return { folders, files, structureStatus: validateGs3Project([], []).status, valid: false, errors: ["Nenhum talhão com AdaptiveCurve foi encontrado."], warnings: [] };
 
   const setupFields: Array<{ field: FieldNode; farmId: string; farmName: string; clientId: string; clientName: string }> = [];
+  const node = makeUuid();
   for (const field of fields) {
     const client = analysis.clients.find((item) => item.farms.some((farm) => farm.fields.some((candidate) => candidate.id === field.id)));
     const farm = client?.farms.find((item) => item.fields.some((candidate) => candidate.id === field.id));
@@ -176,8 +180,8 @@ export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, 
       }
     }
     files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, curves, clientId, clientName, farmId, farmName)), type: "SpatialCatalog", status: "OK" });
+    files.push({ path: `${base}/WaterManagement.SpatialCatalog`, content: makeXml(buildWaterManagementSpatialCatalog({ field, clientId, clientName, farmId, farmName, node })), type: "WaterManagement", status: "OK" });
   }
-  const node = makeUuid();
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(setupFields, node)), type: "setup.fds", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/host", content: uuidToHostBytes(node), type: "host", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/global.ver", content: buildGlobalVer(), type: "global.ver", status: "OK" });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateGs3Project } from "@/converter/gs3-project-builder";
+import { buildWaterManagementSpatialCatalog } from "@/converter/water-management-builder";
 import type { FieldNode } from "@/converter/types";
 
 const emptyField = {
@@ -79,5 +80,36 @@ describe("validateGs3Project", () => {
     expect(result.status.CurveTrack).toBe("ERRO");
     expect(result.errors).toContain("Talhão possui AdaptiveCurves identificadas, mas a conversão não gerou saída ou faltam dados.");
     expect(result.valid).toBe(false);
+  });
+});
+
+
+describe("buildWaterManagementSpatialCatalog", () => {
+  it("gera Client, Farm, Field, farmRef e eridFieldRef do Field selecionado", () => {
+    const field = { ...emptyField, id: "field-600057", name: "600057" } as FieldNode;
+    const xml = buildWaterManagementSpatialCatalog({
+      field,
+      clientId: "client-ul",
+      clientName: "UL",
+      farmId: "farm-600057",
+      farmName: "600057",
+      node: "11111111-1111-1111-1111-111111111111",
+    });
+
+    expect(xml).toContain('<rcdsetup:Client');
+    expect(xml).toContain('erid="{client-ul}" name="UL"');
+    expect(xml).toContain('<rcdsetup:Farm');
+    expect(xml).toContain('erid="{farm-600057}" name="600057" clientRef="{client-ul}"');
+    expect(xml).toContain('<rcdsetup:Field');
+    expect(xml).toContain('erid="{field-600057}" name="600057" farmRef="{farm-600057}"');
+    expect(xml).toContain('<SpatialItems eridFieldRef="{field-600057}" />');
+  });
+
+  it("reconhece WaterManagement como OK quando o arquivo está presente", () => {
+    const result = validateGs3Project([
+      { path: "WaterManagement.SpatialCatalog", content: new TextEncoder().encode("<SpatialItems />"), type: "WaterManagement", status: "OK" },
+    ], [emptyField]);
+
+    expect(result.status.WaterManagement).toBe("OK");
   });
 });
