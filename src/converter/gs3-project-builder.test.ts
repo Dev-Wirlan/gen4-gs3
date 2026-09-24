@@ -74,7 +74,7 @@ describe("validateGs3Project", () => {
       adaptiveCurves: [{ id: "curve-1", guid: "guid-1", path: "curve.gjson" }],
     } as unknown as FieldNode;
 
-    const result = validateGs3Project([], field);
+    const result = validateGs3Project([], [field]);
 
     expect(result.status.CurveTrack).toBe("ERRO");
     expect(result.errors).toContain("Talhão possui AdaptiveCurves identificadas, mas a conversão não gerou saída ou faltam dados.");
