@@ -224,7 +224,8 @@ export function ConverterApp() {
         )}
 
         <footer className="pb-4 text-center font-mono text-[10px] text-muted-foreground">
-          A análise e a conversão acontecem neste navegador. Nenhum projeto agrícola é enviado.
+          <p>A análise e a conversão acontecem neste navegador. Nenhum projeto agrícola é enviado.</p>
+          <p className="mt-1">Desenvolvido por Dev-Wirlan</p>
         </footer>
       </main>
     </div>
