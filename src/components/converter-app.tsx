@@ -159,11 +159,7 @@ export function ConverterApp() {
       <header className="glass slash-r sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 px-5 py-3 md:px-8">
         <div className="flex items-center gap-3">
           <div className="brand-mark" aria-label="John Deere" role="img">
-            <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M8 8h48v30.5C56 49.3 47.3 56 36.5 56h-9C16.7 56 8 49.3 8 38.5V8Z"/>
-              <path fill="var(--background)" d="M31.4 14.3c-2.9 3.8-5.2 7.2-6.6 10.2-1.2 2.5-1.7 4.8-1.4 6.8-2.7 1.4-5.1 3.2-7.1 5.5 3.8-.9 7.1-2.1 9.9-3.6 1.6 1.9 3.9 3.1 6.9 3.5-1.2 2.8-3.4 5.2-6.5 7.2 5.9-.7 10-3.1 12.4-7.1 2.2.1 4.4-.2 6.6-.9-2.4-1.4-4.8-2.2-7.2-2.5.4-2.1.3-4.3-.2-6.7-.6-3.2-2.8-7.4-6.8-12.4Zm-1.1 11.2c1.3-1.8 2.3-3.6 3-5.3 1.4 2.2 2.1 4.3 2.1 6.2-1.7-.2-3.4-.5-5.1-.9Zm-4.2 6.5c1.6-.5 3.2-.9 4.8-1.1-.8 1.4-1.9 2.5-3.3 3.3-.7-.6-1.2-1.3-1.5-2.2Z"/>
-              <path fill="currentColor" d="M27.2 44.1h9.6v2.7h-9.6z"/>
-            </svg>
+            <img src="/john-deere-logo.png" alt="" aria-hidden="true" />
           </div>
           <div>
             <p className="text-sm font-semibold">Gen4 → GS3 Converter</p>
