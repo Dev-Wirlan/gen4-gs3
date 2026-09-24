@@ -61,18 +61,8 @@ export function ConverterApp() {
       setStage("processing");
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-      const fields = analysis.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields));
-      const fieldsWithCurves = fields.filter((field) => field.adaptiveCurves.length > 0);
-      if (fieldsWithCurves.length !== 1) {
-        throw new Error(
-          fieldsWithCurves.length === 0
-            ? "Nenhum talhão com AdaptiveCurve foi encontrado no projeto."
-            : "O projeto possui mais de um talhão com AdaptiveCurve. A seleção de talhão ainda não faz parte desta versão.",
-        );
-      }
-
       setStage("building");
-      const result = await exportValidatedAdaptiveCurves(zip, analysis, fieldsWithCurves[0].id);
+      const result = await exportValidatedAdaptiveCurves(zip, analysis);
       if (!result.validation.valid) {
         throw new Error(
           result.failures.length
