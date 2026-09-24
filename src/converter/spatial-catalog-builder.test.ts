@@ -7,7 +7,9 @@ function assertWellFormedXml(xml: string) {
   const tagPattern = /<([^!?][^>]*?)>/g;
 
   for (const match of xml.matchAll(tagPattern)) {
-    const raw = match[1].trim();
+    const rawMatch = match[1];
+    if (!rawMatch) continue;
+    const raw = rawMatch.trim();
     if (raw.endsWith("/")) continue;
 
     if (raw.startsWith("/")) {
@@ -17,7 +19,7 @@ function assertWellFormedXml(xml: string) {
     }
 
     const name = raw.split(/\s+/)[0];
-    stack.push(name);
+    if (name) stack.push(name);
   }
 
   expect(stack).toEqual([]);
