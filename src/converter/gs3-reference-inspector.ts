@@ -90,7 +90,8 @@ function findAsciiStrings(bytes: Uint8Array): ReferenceStringOccurrence[] {
   const result: ReferenceStringOccurrence[] = [];
   let start = -1;
   for (let index = 0; index <= bytes.length; index += 1) {
-    const isPrintable = index < bytes.length && (printable(bytes[index]) || bytes[index] === 9);
+    const byte = bytes[index];
+    const isPrintable = byte !== undefined && (printable(byte) || byte === 9);
     if (isPrintable && start < 0) start = index;
     if (!isPrintable && start >= 0) {
       if (index - start >= 4) {
@@ -128,8 +129,13 @@ function extractXmlTags(text: string): ReferenceXmlTag[] {
     const attributes: Record<string, string> = {};
     const rawAttributes = match[2] ?? "";
     const attributePattern = /([A-Za-z_][\w:.-]*)\s*=\s*["']([^"']*)["']/g;
-    for (const attribute of rawAttributes.matchAll(attributePattern)) attributes[attribute[1]] = attribute[2];
-    result.push({ name: match[1], attributes, offset: match.index });
+    for (const attribute of rawAttributes.matchAll(attributePattern)) {
+      const key = attribute[1];
+      const value = attribute[2];
+      if (key !== undefined && value !== undefined) attributes[key] = value;
+    }
+    const name = match[1];
+    if (name !== undefined) result.push({ name, attributes, offset: match.index });
   }
   return result.slice(0, 1000);
 }
