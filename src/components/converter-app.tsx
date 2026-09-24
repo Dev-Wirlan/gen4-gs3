@@ -100,7 +100,7 @@ export function ConverterApp() {
     selectFile(event.dataTransfer.files[0]);
   };
 
-  const isBusy = ["reading", "analyzing", "processing", "building", "validating"].includes(stage);
+  const isBusy = ["analyzing", "processing", "building", "validating"].includes(stage);
   const currentStage = stage === "complete" ? stages.length : stages.findIndex((item) => item.key === stage);
 
   return (
