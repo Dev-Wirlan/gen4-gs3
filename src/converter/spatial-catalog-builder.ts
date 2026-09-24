@@ -48,7 +48,7 @@ export function buildSpatialCatalog(
       <rcdscbase:vrReferenceLatitude value="${geometry.referenceLatitude}" sourceUOM="arcdeg" variableRepresentation="vrLatitude" />
       <rcdscbase:vrReferenceLongitude value="${geometry.referenceLongitude}" sourceUOM="arcdeg" variableRepresentation="vrLongitude" />
     </CurvedTrackLine>`;
-  }).join("\\n");
+  }).join("\n");
 
   return `<?xml version="1.0" encoding="utf-8"?>
 <rcdscfldie:SpatialCatalog xmlns:rcdsetup="urn:schemas-johndeere-com:RCD:Setup" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns:rcdscbase="urn:schemas-johndeere-com:RCD:SpatialCatalog:Base" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:rcdscfldie="urn:schemas-johndeere-com:SpatialCatalog:FieldImportExport">
@@ -62,8 +62,8 @@ export function buildSpatialCatalog(
     <rcdsetup:FileSchemaVersion nonProductionCode="0"><bt:FileSchemaContentVersion major="3" minor="28" /><bt:UnitOfMeasureVersion major="1" minor="43" /><bt:RepresentationSystemVersion major="4" minor="161" /></rcdsetup:FileSchemaVersion>
     <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
     <rcdsetup:Participant><rcdsetup:Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" /></rcdsetup:Participant>
-    <rcdsetup:Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" /></rcdsetup:Farm>
-    <rcdsetup:Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}" /></rcdsetup:Field>
+    <rcdsetup:Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" />
+    <rcdsetup:Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}" />
     <rcdsetup:Products />
   </Setup>
   <SpatialItems eridFieldRef="{${xmlEscape(field.id)}}">
