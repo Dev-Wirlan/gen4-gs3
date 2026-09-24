@@ -22,7 +22,7 @@ describe("AdaptiveCurve parser", () => {
     expect(geometry.firstGeometryPoint?.originalIndex).toBe(1);
     expect(geometry.referenceLongitude).toBe(-49.870430720);
     expect(geometry.referenceLatitude).toBe(-21.782191390);
-    expect(geometry.lines[0].points.map((point) => point.originalIndex)).toEqual([0, 1, 2]);
+    expect(geometry.lines[0]?.points.map((point) => point.originalIndex)).toEqual([0, 1, 2]);
   });
 
   it("keeps the existing metadata/reference fallback when the initialization pair is absent", () => {
