@@ -16,8 +16,11 @@ describe("CurveTrack coordinate transformation", () => {
     };
 
     const reference = getCurveReference(curve);
+    const secondCurvePoint = curve.lines[0]?.points[1];
+    expect(secondCurvePoint).toBeDefined();
+    if (!secondCurvePoint) throw new Error("Segundo ponto ausente no teste");
     expect(toCurveTrackCoordinates(firstGeometryPoint, reference, true)).toEqual({ x: 0, y: 0 });
-    expect(toCurveTrackCoordinates(curve.lines[0].points[1], reference)).toEqual({
+    expect(toCurveTrackCoordinates(secondCurvePoint, reference)).toEqual({
       x: 0.00000032000000516063665,
       y: 0.0000040890000008175775,
     });

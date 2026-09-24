@@ -56,12 +56,20 @@ function uuidToHostBytes(uuid: string): Uint8Array {
   const hex = uuid.replaceAll("-", "");
   const out = new Uint8Array(16);
   const bytes = hex.match(/.{2}/g) ?? [];
-  for (let i = 0; i < 16; i++) out[i] = Number.parseInt(bytes[i], 16);
+  for (let i = 0; i < 16; i++) {
+    const byte = bytes[i];
+    out[i] = byte ? Number.parseInt(byte, 16) : 0;
+  }
   // host stores the UUID in Windows GUID little-endian field order.
-  [out[0], out[3]] = [out[3], out[0]];
-  [out[1], out[2]] = [out[2], out[1]];
-  [out[4], out[5]] = [out[5], out[4]];
-  [out[6], out[7]] = [out[7], out[6]];
+  const swap = (left: number, right: number) => {
+    const leftValue = out[left] ?? 0;
+    out[left] = out[right] ?? 0;
+    out[right] = leftValue;
+  };
+  swap(0, 3);
+  swap(1, 2);
+  swap(4, 5);
+  swap(6, 7);
   return out;
 }
 

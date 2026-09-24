@@ -102,7 +102,8 @@ export function ConverterApp() {
             .map((field) => ({ field, clientName: client.name, farmName: farm.name })),
         ),
       );
-      const fieldId = selectedFieldId ?? (candidates.length === 1 ? candidates[0].field.id : undefined);
+      const soleCandidate = candidates.length === 1 ? candidates[0] : undefined;
+      const fieldId = selectedFieldId ?? soleCandidate?.field.id;
 
       if (!fieldId || !candidates.some(({ field }) => field.id === fieldId)) {
         throw new Error("Selecione o talhão que deseja converter antes de continuar.");

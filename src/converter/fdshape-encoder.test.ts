@@ -6,12 +6,12 @@ const makeCurve = (lines: number[][][]): NormalizedCurve => ({
   referenceLongitude: -49,
   referenceLatitude: -22,
   lines: lines.map((line, lineIndex) => ({
-    points: line.map(([longitude, latitude], originalIndex) => ({
-      longitude,
-      latitude,
-      originalIndex,
-      lineIndex,
-    })),
+    points: line.map((coordinates, originalIndex) => {
+      const longitude = coordinates[0];
+      const latitude = coordinates[1];
+      if (longitude === undefined || latitude === undefined) throw new Error("Coordenada inválida no teste");
+      return { longitude, latitude, originalIndex, lineIndex };
+    }),
   })),
   metadata: {},
 });
