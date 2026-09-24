@@ -143,8 +143,9 @@ export function validateGs3Project(files: Gs3File[], fields: FieldNode[]): { sta
   return { status, valid, errors, warnings };
 }
 
-export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis): Promise<Gs3Project> {
-  const fields = analysis.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields)).filter((field) => field.adaptiveCurves.length > 0);
+export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, fieldId: string): Promise<Gs3Project> {
+  const field = getFieldFor(analysis, fieldId);
+  const fields = field && field.adaptiveCurves.length > 0 ? [field] : [];
   const files: Gs3File[] = [];
   const folders: string[] = [];
 

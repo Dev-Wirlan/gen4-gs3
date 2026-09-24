@@ -4,7 +4,7 @@ import type { ProjectAnalysis } from "./types";
 
 export async function exportValidatedAdaptiveCurves(source: JSZip, analysis: ProjectAnalysis, fieldId: string) {
   const output = new JSZip();
-  const project = await buildGs3Project(source, analysis);
+  const project = await buildGs3Project(source, analysis, fieldId);
 
   for (const folder of project.folders) {
     output.folder(folder);

@@ -3,6 +3,8 @@ import { CheckCircle2, Download, FileArchive, LoaderCircle, Lock, Upload } from 
 import { analyzeGen4Project } from "@/converter/gen4-parser";
 import { exportValidatedAdaptiveCurves } from "@/converter/zip-exporter";
 import { initializePwa } from "@/lib/pwa";
+import type JSZip from "jszip";
+import type { ProjectAnalysis } from "@/converter/types";
 
 type ConversionStage = "idle" | "reading" | "analyzing" | "processing" | "building" | "validating" | "complete" | "error";
 
@@ -22,6 +24,9 @@ export function ConverterApp() {
   const [error, setError] = useState<string>();
   const [downloadUrl, setDownloadUrl] = useState<string>();
   const [outputName, setOutputName] = useState<string>();
+  const [analysis, setAnalysis] = useState<ProjectAnalysis>();
+  const [sourceZip, setSourceZip] = useState<JSZip>();
+  const [selectedFieldId, setSelectedFieldId] = useState<string>();
 
   useEffect(() => {
     void initializePwa();
@@ -41,6 +46,9 @@ export function ConverterApp() {
     setError(undefined);
     setDownloadUrl(undefined);
     setOutputName(undefined);
+    setAnalysis(undefined);
+    setSourceZip(undefined);
+    setSelectedFieldId(undefined);
     setStage("reading");
   };
 
@@ -52,17 +60,60 @@ export function ConverterApp() {
     setOutputName(undefined);
 
     try {
-      setStage("analyzing");
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      const { analysis, zip } = await analyzeGen4Project(file);
+      let currentAnalysis = analysis;
+      let currentZip = sourceZip;
 
-      if (analysis.zipStatus !== "valid") throw new Error("O projeto Gen4/GS4 não pôde ser validado como ZIP.");
+      if (!currentAnalysis || !currentZip) {
+        setStage("analyzing");
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const analyzed = await analyzeGen4Project(file);
+        currentAnalysis = analyzed.analysis;
+        currentZip = analyzed.zip;
+        setAnalysis(currentAnalysis);
+        setSourceZip(currentZip);
 
+        if (currentAnalysis.zipStatus !== "valid") {
+          throw new Error("O projeto Gen4/GS4 não pôde ser validado como ZIP.");
+        }
+
+        const candidates = currentAnalysis.clients.flatMap((client) =>
+          client.farms.flatMap((farm) =>
+            farm.fields
+              .filter((field) => field.adaptiveCurves.length > 0)
+              .map((field) => ({ field, clientName: client.name, farmName: farm.name })),
+          ),
+        );
+
+        if (candidates.length === 0) {
+          throw new Error("Nenhum talhão com AdaptiveCurve foi encontrado.");
+        }
+
+        if (candidates.length > 1 && !selectedFieldId) {
+          setSelectedFieldId(undefined);
+          setStage("idle");
+          return;
+        }
+      }
+
+      const candidates = currentAnalysis.clients.flatMap((client) =>
+        client.farms.flatMap((farm) =>
+          farm.fields
+            .filter((field) => field.adaptiveCurves.length > 0)
+            .map((field) => ({ field, clientName: client.name, farmName: farm.name })),
+        ),
+      );
+      const fieldId = selectedFieldId ?? (candidates.length === 1 ? candidates[0].field.id : undefined);
+
+      if (!fieldId || !candidates.some(({ field }) => field.id === fieldId)) {
+        throw new Error("Selecione o talhão que deseja converter antes de continuar.");
+      }
+
+      setSelectedFieldId(fieldId);
       setStage("processing");
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       setStage("building");
-      const result = await exportValidatedAdaptiveCurves(zip, analysis);
+      const result = await exportValidatedAdaptiveCurves(currentZip, currentAnalysis, fieldId);
       if (!result.validation.valid) {
         throw new Error(
           result.failures.length
@@ -90,6 +141,16 @@ export function ConverterApp() {
     selectFile(event.dataTransfer.files[0]);
   };
 
+  const candidateFields = analysis
+    ? analysis.clients.flatMap((client) =>
+        client.farms.flatMap((farm) =>
+          farm.fields
+            .filter((field) => field.adaptiveCurves.length > 0)
+            .map((field) => ({ field, clientName: client.name, farmName: farm.name })),
+        ),
+      )
+    : [];
+  const needsFieldSelection = candidateFields.length > 1 && !selectedFieldId;
   const isBusy = ["analyzing", "processing", "building", "validating"].includes(stage);
   const currentStage = stage === "complete" ? stages.length : stages.findIndex((item) => item.key === stage);
 
@@ -157,6 +218,35 @@ export function ConverterApp() {
               )}
             </div>
 
+            {candidateFields.length > 1 && (
+              <div className="mt-6 rounded-lg border border-border bg-background/20 p-4">
+                <p className="text-sm font-semibold">Selecione o Field para converter</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  O projeto possui mais de um Field com AdaptiveCurves. A conversão usa o GUID real do Field selecionado.
+                </p>
+                <div className="mt-4 space-y-2">
+                  {candidateFields.map(({ field, clientName, farmName }) => (
+                    <label key={field.id} className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3 hover:border-primary/50">
+                      <input
+                        type="radio"
+                        name="field-selection"
+                        value={field.id}
+                        checked={selectedFieldId === field.id}
+                        onChange={() => setSelectedFieldId(field.id)}
+                        className="mt-1"
+                      />
+                      <span className="min-w-0 text-sm">
+                        <span className="block font-semibold">Field: {field.name}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          Client: {clientName} · Farm: {farmName} · AdaptiveCurves: {field.adaptiveCurves.length}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 space-y-2">
               {stages.map((item, index) => {
                 const done = currentStage > index || stage === "complete";
@@ -187,11 +277,11 @@ export function ConverterApp() {
               <button
                 type="button"
                 onClick={() => void convert()}
-                disabled={isBusy}
+                disabled={isBusy || needsFieldSelection}
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
               >
                 {isBusy ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
-                Converter para GS3
+                {needsFieldSelection ? "Selecione um Field" : "Converter para GS3"}
               </button>
             )}
           </section>
