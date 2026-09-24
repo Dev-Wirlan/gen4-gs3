@@ -62,7 +62,7 @@ export function ConverterApp() {
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       setStage("building");
-      const result = await exportValidatedAdaptiveCurves(zip, analysis, "");
+      const result = await exportValidatedAdaptiveCurves(zip, analysis);
       if (!result.validation.valid) {
         throw new Error(
           result.failures.length

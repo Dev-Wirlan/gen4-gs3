@@ -6,7 +6,7 @@ const makeCurve = (lines: number[][][]): NormalizedCurve => ({
   referenceLongitude: -49,
   referenceLatitude: -22,
   lines: lines.map((line, lineIndex) => ({
-    points: line.map(([longitude = 0, latitude = 0], originalIndex) => ({
+    points: line.map(([longitude, latitude], originalIndex) => ({
       longitude,
       latitude,
       originalIndex,

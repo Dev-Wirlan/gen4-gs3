@@ -10,11 +10,9 @@ import type { AdaptiveCurveGeometry, AdaptiveCurveLine, CurvePoint, NormalizedCu
  */
 export function normalizeAdaptiveCurve(geometry: AdaptiveCurveGeometry): NormalizedCurve {
   const firstLine = geometry.lines.find((line) => line.points.length > 0);
-  const firstPoint = firstLine?.points[0];
-  const secondPoint = firstLine?.points[1];
-  const inferredReference = firstPoint?.z === -7000000 ? firstPoint : undefined;
-  const inferredFirstGeometry = inferredReference && secondPoint?.z === -7000000
-    ? secondPoint
+  const inferredReference = firstLine?.points[0]?.z === -7000000 ? firstLine.points[0] : undefined;
+  const inferredFirstGeometry = inferredReference && firstLine.points[1]?.z === -7000000
+    ? firstLine.points[1]
     : undefined;
 
   const curveReference = geometry.curveReference ?? inferredReference;
@@ -60,7 +58,6 @@ export function normalizeAdaptiveCurve(geometry: AdaptiveCurveGeometry): Normali
     points: line.points.filter((point, index, points) => {
       if (index === 0) return true;
       const predecessor = points[index - 1];
-      if (!predecessor) return true;
       const deltaLongitude = point.longitude - predecessor.longitude;
       const deltaLatitude = point.latitude - predecessor.latitude;
       const isExactDuplicate = deltaLongitude === 0 && deltaLatitude === 0;
@@ -73,7 +70,7 @@ export function normalizeAdaptiveCurve(geometry: AdaptiveCurveGeometry): Normali
   }));
 
   return {
-    ...(geometry.curveId ? { curveId: geometry.curveId } : {}),
+    curveId: geometry.curveId,
     referenceLongitude: geometry.referenceLongitude,
     referenceLatitude: geometry.referenceLatitude,
     ...(curveReference ? { curveReference } : {}),
