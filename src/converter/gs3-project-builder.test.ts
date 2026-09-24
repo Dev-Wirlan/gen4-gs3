@@ -13,7 +13,7 @@ const emptyField = {
 
 describe("validateGs3Project", () => {
   it("não libera um projeto enquanto estruturas GS3 obrigatórias não estiverem comprovadas", () => {
-    const result = validateGs3Project([], emptyField);
+    const result = validateGs3Project([], [emptyField]);
 
     expect(result.valid).toBe(false);
     expect(result.status.SpatialCatalog).toBe("PENDENTE");
@@ -29,7 +29,7 @@ describe("validateGs3Project", () => {
       { path: "global.ver", content: new Uint8Array(1024), type: "global.ver", status: "OK" },
       { path: "host", content: new Uint8Array(16), type: "host", status: "OK" },
       { path: "curve.fdShape", content: new Uint8Array([1]), type: "CurveTrack", status: "OK" },
-    ], emptyField);
+    ], [emptyField]);
 
     expect(result.status.SpatialCatalog).toBe("OK");
     expect(result.status["setup.fds"]).toBe("OK");
@@ -51,7 +51,7 @@ describe("validateGs3Project", () => {
       { path: "SpatialCatalog", content: new Uint8Array([1]), type: "SpatialCatalog", status: "OK" },
       { path: "global.ver", content: new Uint8Array(1024), type: "global.ver", status: "OK" },
       { path: "host", content: new Uint8Array(16), type: "host", status: "OK" },
-    ], field);
+    ], [field]);
 
     expect(result.status.Boundary).toBe("PENDENTE");
     expect(result.valid).toBe(true);
@@ -61,7 +61,7 @@ describe("validateGs3Project", () => {
   it("marca CurveTrack como OK quando existe uma saída codificada sem erro", () => {
     const result = validateGs3Project(
       [{ path: "curve.fdShape", content: new Uint8Array([1]), type: "CurveTrack", status: "OK" }],
-      emptyField,
+      [emptyField],
     );
 
     expect(result.status.CurveTrack).toBe("OK");
