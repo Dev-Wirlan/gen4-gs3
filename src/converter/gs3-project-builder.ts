@@ -135,6 +135,9 @@ export function validateGs3Project(files: Gs3File[], fields: FieldNode[]): { sta
   if (fields.every((field) => field.flags.length === 0)) status.Flags = "OK";
 
   if (files.some((f) => f.type === "SpatialCatalog" && f.status === "OK")) status.SpatialCatalog = "OK";
+  if (files.some((f) => f.type === "WaterManagement" && f.status === "OK")) {
+  status.WaterManagement = "OK";
+}
   if (files.some((f) => f.type === "setup.fds" && f.status === "OK")) status["setup.fds"] = "OK";
   if (files.some((f) => f.type === "global.ver" && f.status === "OK")) status["global.ver"] = "OK";
   if (files.some((f) => f.type === "host" && f.status === "OK")) status.host = "OK";
