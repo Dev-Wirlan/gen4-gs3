@@ -52,10 +52,10 @@ export function ConverterApp() {
     setOutputName(undefined);
 
     try {
-      setStage("reading");
+      setStage("analyzing");
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       const { analysis, zip } = await analyzeGen4Project(file);
 
-      setStage("analyzing");
       if (analysis.zipStatus !== "valid") throw new Error("O projeto Gen4/GS4 não pôde ser validado como ZIP.");
 
       setStage("processing");
