@@ -41,11 +41,11 @@ export function ConverterApp() {
     setError(undefined);
     setDownloadUrl(undefined);
     setOutputName(undefined);
-    setStage("idle");
+    setStage("reading");
   };
 
   const convert = async () => {
-    if (!file || stage === "reading" || stage === "analyzing" || stage === "processing" || stage === "building" || stage === "validating") return;
+    if (!file || stage === "analyzing" || stage === "processing" || stage === "building" || stage === "validating") return;
 
     setError(undefined);
     setDownloadUrl(undefined);
@@ -59,7 +59,7 @@ export function ConverterApp() {
       if (analysis.zipStatus !== "valid") throw new Error("O projeto Gen4/GS4 não pôde ser validado como ZIP.");
 
       setStage("processing");
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       const fields = analysis.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields));
       const fieldsWithCurves = fields.filter((field) => field.adaptiveCurves.length > 0);
@@ -82,7 +82,7 @@ export function ConverterApp() {
       }
 
       setStage("validating");
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       const name = file.name.replace(/\.zip$/i, "") + "_GS3.zip";
       setDownloadUrl(URL.createObjectURL(result.blob));
