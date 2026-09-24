@@ -13,7 +13,27 @@ const attr = (element: Element, names: string[]) => {
 export const normalizeGuid = (value?: string) => value?.trim().replace(/^\{?|\}?$/g, "").toLowerCase() || undefined;
 
 const guid = (element: Element) => normalizeGuid(attr(element, ["StringGuid", "Guid", "ObjectGuid", "Id", "Uid"]));
-const taggedEntity = (element: Element) => normalizeGuid(attr(element, ["TaggedEntity", "ParentGuid", "Parent", "FarmGuid", "ClientGuid", "CustomerGuid", "GrowerGuid"]));
+const taggedEntity = (element: Element) => {
+  const childFarm = Array.from(element.children).find(
+    (child) => elementName(child) === "farm",
+  );
+
+  return (
+    normalizeGuid(childFarm?.textContent) ??
+    normalizeGuid(
+      attr(element, [
+        "TaggedEntity",
+        "ParentGuid",
+        "Parent",
+        "FarmGuid",
+        "ClientGuid",
+        "Client",
+        "CustomerGuid",
+        "GrowerGuid",
+      ]),
+    )
+  );
+};
 
 const identity = (element: Element, fallback: string) => ({
   id: guid(element) ?? fallback,
