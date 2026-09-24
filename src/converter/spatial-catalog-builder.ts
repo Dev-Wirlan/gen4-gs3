@@ -10,13 +10,21 @@ const xmlEscape = (value: string) =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
 function curveMbr(geometry: AdaptiveCurveGeometry) {
-  const points = geometry.lines.flatMap((line) => line.points);
-  return {
-    north: Math.max(...points.map((p) => p.latitude)),
-    south: Math.min(...points.map((p) => p.latitude)),
-    east: Math.max(...points.map((p) => p.longitude)),
-    west: Math.min(...points.map((p) => p.longitude)),
-  };
+  let north = -Infinity;
+  let south = Infinity;
+  let east = -Infinity;
+  let west = Infinity;
+
+  for (const line of geometry.lines) {
+    for (const point of line.points) {
+      north = Math.max(north, point.latitude);
+      south = Math.min(south, point.latitude);
+      east = Math.max(east, point.longitude);
+      west = Math.min(west, point.longitude);
+    }
+  }
+
+  return { north, south, east, west };
 }
 
 const makeUuid = () => crypto.randomUUID();
@@ -43,13 +51,13 @@ export function buildSpatialCatalog(
   }).join("\\n");
 
   return `<?xml version="1.0" encoding="utf-8"?>
-<rcdscfldie:SpatialCatalog xmlns:rcdsetup="urn:schemas-johndeere-com:RCD:Setup" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns:rcdscbase="urn:schemas-johndeere-com:RCD:SpatialCatalog:Base" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:rcdscfldie="urn:schemas-johndeere-com:RCD:SpatialCatalog:FieldImportExport">
+<rcdscfldie:SpatialCatalog xmlns:rcdsetup="urn:schemas-johndeere-com:RCD:Setup" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns:rcdscbase="urn:schemas-johndeere-com:RCD:SpatialCatalog:Base" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:rcdscfldie="urn:schemas-johndeere-com:SpatialCatalog:FieldImportExport">
   <FileSchemaVersion nonProductionCode="0">
     <bt:FileSchemaContentVersion major="1" minor="11" />
     <bt:UnitOfMeasureVersion major="1" minor="43" />
     <bt:RepresentationSystemVersion major="4" minor="161" />
   </FileSchemaVersion>
-  <SourceApp major="2" minor="0" build="0" revision="135" nameSourceApp="RCD Target Provider" uuidSourceApp="{b050528e-f328-4dd8-9e9c-71fe8153692e}" uuidSourceAppNode="{${node}}" uuidSession="{${makeUuid()}}" />
+  <SourceApp major="2.0" build="0" revision="135" nameSourceApp="RCD Target Provider" uuidSourceApp="{b050528e-f328-4dd8-9e9c-71fe8153692e}" uuidSourceAppNode="{${node}}" uuidSession="{${makeUuid()}}" />
   <Setup>
     <rcdsetup:FileSchemaVersion nonProductionCode="0"><bt:FileSchemaContentVersion major="3" minor="28" /><bt:UnitOfMeasureVersion major="1" minor="43" /><bt:RepresentationSystemVersion major="4" minor="161" /></rcdsetup:FileSchemaVersion>
     <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
