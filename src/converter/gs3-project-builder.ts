@@ -72,7 +72,7 @@ function buildGlobalVer(): Uint8Array {
 
 const makeXml = (text: string) => new TextEncoder().encode(text);
 
-function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clientId: string, clientName: string, node = makeUuid()): string {
+function buildSetupFds(fields: Array<{ field: FieldNode; farmId: string; farmName: string; clientId: string; clientName: string }>, node = makeUuid()): string {
   const now = new Date().toISOString();
   return `<?xml version="1.0" encoding="utf-8"?>
 <SetupFile xmlns:spatial="urn:schemas-johndeere-com:SpatialTypes" xmlns:unit="urn:schemas-johndeere-com:UnitSystem" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rep="urn:schemas-johndeere-com:Representation" xmlns:bt="urn:schemas-johndeere-com:BasicTypes" xmlns="urn:schemas-johndeere-com:RCD:Setup">
@@ -84,21 +84,14 @@ function buildSetupFds(field: FieldNode, farmId: string, farmName: string, clien
       <bt:RepresentationSystemVersion major="4" minor="161" />
     </FileSchemaVersion>
     <bt:Synchronization><bt:NodeVersions><bt:Node uuid="{${node}}" lastSeen="${now}" /></bt:NodeVersions><bt:EntityDeletions /></bt:Synchronization>
-    <Participant>
-      <Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" />
-    </Participant>
-    <Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" />
-    <Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}">
-      <Area value="0" sourceUOM="ac" variableRepresentation="vrReportedFieldArea" />
-    </Field>
-    <Products />
+    <Participant>\n      ${fields.map(({ clientId, clientName }) => `<Client lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(clientId)}}" name="${xmlEscape(clientName)}" />`).join("\n      ")}\n    </Participant>\n    ${fields.map(({ field, farmId, farmName, clientId }) => `<Farm lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(farmId)}}" name="${xmlEscape(farmName)}" clientRef="{${xmlEscape(clientId)}}" />\n    <Field lastModified="${now}" sourceNode="{00000000-0000-0000-0000-000000000000}" erid="{${xmlEscape(field.id)}}" name="${xmlEscape(field.name)}" farmRef="{${xmlEscape(farmId)}}">\n      <Area value="0" sourceUOM="ac" variableRepresentation="vrReportedFieldArea" />\n    </Field>`).join("\n    ")}\n    <Products />
   </Setup>
 </SetupFile>`;
 }
 
-export function validateGs3Project(files: Gs3File[], field: FieldNode | undefined): { status: Gs3StructureStatus; valid: boolean; errors: string[]; warnings: string[] } {
+export function validateGs3Project(files: Gs3File[], fields: FieldNode[]): { status: Gs3StructureStatus; valid: boolean; errors: string[]; warnings: string[] } {
   const status: Gs3StructureStatus = {
-    AdaptiveCurve: field?.adaptiveCurves.length ? "OK" : "PENDENTE",
+    AdaptiveCurve: fields.some((field) => field.adaptiveCurves.length > 0) ? "OK" : "PENDENTE",
     CurveTrack: "PENDENTE",
     ABLine: "PENDENTE",
     Boundary: "PENDENTE",
@@ -120,15 +113,15 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
     } else {
       status.CurveTrack = "OK";
     }
-  } else if (field?.adaptiveCurves.length) {
+  } else if (fields.some((field) => field.adaptiveCurves.length)) {
     status.CurveTrack = "ERRO";
     errors.push("Talhão possui AdaptiveCurves identificadas, mas a conversão não gerou saída ou faltam dados.");
   } else {
     status.CurveTrack = "OK";
   }
 
-  if (field?.abLines.length === 0) status.ABLine = "OK";
-  if (field?.boundaries.length === 0) {
+  if (fields.every((field) => field.abLines.length === 0)) status.ABLine = "OK";
+  if (fields.every((field) => field.boundaries.length === 0)) {
     status.Boundary = "OK";
   } else if (files.some((f) => f.type === "Boundary" && f.status === "OK")) {
     status.Boundary = "OK";
@@ -136,7 +129,7 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
     status.Boundary = "PENDENTE";
     warnings.push("Boundary permanece isolado como etapa pendente: a engenharia reversa confirmou a estrutura do fdShape e a origem dos pontos, mas ainda não confirmou a regra Gen4 → Boundary.fdShape (ordenação, ParentBoundary/Headland e 181 ocorrências adicionais). O conversor não inventará essa regra.");
   }
-  if (field?.flags.length === 0) status.Flags = "OK";
+  if (fields.every((field) => field.flags.length === 0)) status.Flags = "OK";
 
   if (files.some((f) => f.type === "SpatialCatalog" && f.status === "OK")) status.SpatialCatalog = "OK";
   if (files.some((f) => f.type === "setup.fds" && f.status === "OK")) status["setup.fds"] = "OK";
@@ -150,71 +143,43 @@ export function validateGs3Project(files: Gs3File[], field: FieldNode | undefine
   return { status, valid, errors, warnings };
 }
 
-export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis, fieldId: string): Promise<Gs3Project> {
-  const field = getFieldFor(analysis, fieldId);
+export async function buildGs3Project(source: JSZip, analysis: ProjectAnalysis): Promise<Gs3Project> {
+  const fields = analysis.clients.flatMap((client) => client.farms.flatMap((farm) => farm.fields)).filter((field) => field.adaptiveCurves.length > 0);
   const files: Gs3File[] = [];
   const folders: string[] = [];
 
-  if (!field) {
-    return {
-      folders: [],
-      files: [],
-      structureStatus: validateGs3Project([], undefined).status,
-      valid: false,
-      errors: ["O talhão selecionado não foi encontrado."],
-      warnings: []
-    };
-  }
+  if (fields.length === 0) return { folders, files, structureStatus: validateGs3Project([], []).status, valid: false, errors: ["Nenhum talhão com AdaptiveCurve foi encontrado."], warnings: [] };
 
-  const client = analysis.clients.find((item) => item.farms.some((farm) => farm.fields.some((candidate) => candidate.id === field.id)));
-  const farm = client?.farms.find((item) => item.fields.some((candidate) => candidate.id === field.id));
-  const clientId = client?.id ?? "00000000-0000-0000-0000-000000000000";
-  const clientName = client?.name ?? "";
-  const farmId = farm?.id ?? "00000000-0000-0000-0000-000000000000";
-  const farmName = farm?.name ?? "";
-  const base = `GS3_2630/JD4600/RCD/EIC/Fields/31/${field.id}`;
-  const curves: Array<{ guid: string; name: string; geometry: AdaptiveCurveGeometry }> = [];
-
-  for (const curve of field.adaptiveCurves) {
-    if (!curve.path || !curve.guid) continue;
-    try {
-      const text = await source.file(curve.path)?.async("text");
-      if (!text) continue;
-      const geom = { ...parseAdaptiveCurve(text), curveId: curve.guid };
-      const normalized = normalizeAdaptiveCurve(geom);
-      curves.push({ guid: curve.guid, name: curve.name, geometry: geom });
-      files.push({
-        path: `${base}/CurveTrack${curve.guid}.fdShape`,
-        content: encodeAdaptiveCurve(normalized),
-        type: "CurveTrack",
-        status: "OK",
-        gen4Path: curve.path
-      });
-    } catch (e) {
-      files.push({
-        path: `${base}/CurveTrack${curve.guid}.fdShape`,
-        content: null,
-        type: "CurveTrack",
-        status: "ERRO",
-        gen4Path: curve.path
-      });
+  const setupFields: Array<{ field: FieldNode; farmId: string; farmName: string; clientId: string; clientName: string }> = [];
+  for (const field of fields) {
+    const client = analysis.clients.find((item) => item.farms.some((farm) => farm.fields.some((candidate) => candidate.id === field.id)));
+    const farm = client?.farms.find((item) => item.fields.some((candidate) => candidate.id === field.id));
+    const clientId = client?.id ?? "00000000-0000-0000-0000-000000000000";
+    const clientName = client?.name ?? "";
+    const farmId = farm?.id ?? "00000000-0000-0000-0000-000000000000";
+    const farmName = farm?.name ?? "";
+    const base = `GS3_2630/JD4600/RCD/EIC/Fields/31/${field.id}`;
+    const curves: Array<{ guid: string; name: string; geometry: AdaptiveCurveGeometry }> = [];
+    setupFields.push({ field, farmId, farmName, clientId, clientName });
+    for (const curve of field.adaptiveCurves) {
+      if (!curve.path || !curve.guid) continue;
+      try {
+        const text = await source.file(curve.path)?.async("text");
+        if (!text) continue;
+        const geom = { ...parseAdaptiveCurve(text), curveId: curve.guid };
+        const normalized = normalizeAdaptiveCurve(geom);
+        curves.push({ guid: curve.guid, name: curve.name, geometry: geom });
+        files.push({ path: `${base}/CurveTrack${curve.guid}.fdShape`, content: encodeAdaptiveCurve(normalized), type: "CurveTrack", status: "OK", gen4Path: curve.path });
+      } catch {
+        files.push({ path: `${base}/CurveTrack${curve.guid}.fdShape`, content: null, type: "CurveTrack", status: "ERRO", gen4Path: curve.path });
+      }
     }
+    files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, curves, clientId, clientName, farmId, farmName)), type: "SpatialCatalog", status: "OK" });
   }
-
   const node = makeUuid();
-  files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(field, farmId, farmName, clientId, clientName, node)), type: "setup.fds", status: "OK" });
+  files.push({ path: "GS3_2630/JD4600/RCD/EIC/setup.fds", content: makeXml(buildSetupFds(setupFields, node)), type: "setup.fds", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/host", content: uuidToHostBytes(node), type: "host", status: "OK" });
   files.push({ path: "GS3_2630/JD4600/RCD/EIC/global.ver", content: buildGlobalVer(), type: "global.ver", status: "OK" });
-  files.push({ path: `${base}/ImportExport.SpatialCatalog`, content: makeXml(buildSpatialCatalog(field, curves, clientId, clientName, farmId, farmName)), type: "SpatialCatalog", status: "OK" });
-
-  const validation = validateGs3Project(files, field);
-
-  return {
-    folders,
-    files,
-    structureStatus: validation.status,
-    valid: validation.valid,
-    errors: validation.errors,
-    warnings: validation.warnings
-  };
+  const validation = validateGs3Project(files, fields);
+  return { folders, files, structureStatus: validation.status, valid: validation.valid, errors: validation.errors, warnings: validation.warnings };
 }
