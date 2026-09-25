@@ -177,7 +177,7 @@ export function ConverterApp() {
         <section className="glass slash p-7 md:p-10">
           <div className="mx-auto max-w-2xl text-center">
             <p className="section-kicker">Conversor John Deere</p>
-            <h1 className="mt-4 text-4xl font-bold leading-tight md:text-5xl">Gen4 → GS3 Converter</h1>
+            <h1 className="mt-4 text-4xl font-bold leading-tight md:text-5xl">Setup Work Gen4 → GS3 Converter</h1>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
               Converta projetos John Deere Gen4/GS4 para GS3.
             </p>
