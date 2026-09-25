@@ -41,13 +41,28 @@ describe("buildGen4SetupWorkProject", () => {
 
   it("não inventa entidades do Golden nem altera o objeto de entrada", async () => {
     const source = new JSZip();
-    source.file("MasterData.xml", masterData);
+    const sourceMasterData = [
+      '<?xml version="1.0" encoding="utf-8"?>',
+      '<SetupFile xmlns="urn:schemas-johndeere-com:RCD:Setup">',
+      "  <Setup>",
+      "    <Participant>",
+      '      <Client erid="{client-1}" name="UL" />',
+      '      <Farm erid="{farm-1}" name="600057" clientRef="{client-1}" />',
+      '      <Field erid="{field-1}" name="600057" farmRef="{farm-1}">',
+      "        <Farm>{farm-1}</Farm>",
+      "      </Field>",
+      '      <WorkDescriptor erid="{work-1}" name="não deve ser copiado" />',
+      "    </Participant>",
+      "  </Setup>",
+      "</SetupFile>",
+    ].join("\n");
+    source.file("MasterData.xml", sourceMasterData);
 
     const result = await buildGen4SetupWorkProject(source, analysis);
     const sourceXml = await source.file("MasterData.xml")?.async("text");
     const outputXml = await result.zip.file("MasterData.xml")?.async("text");
 
-    expect(sourceXml).toContain("WorkDescriptor");
+    expect(sourceXml).toContain("<WorkDescriptor ");
     expect(outputXml).not.toContain("WorkDescriptor");
     expect(outputXml).not.toContain("<Operator");
     expect(outputXml).not.toContain("<ABLine");
