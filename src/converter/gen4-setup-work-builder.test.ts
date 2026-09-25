@@ -57,12 +57,12 @@ describe("buildGen4SetupWorkProject", () => {
       "</SetupFile>",
     ].join("\n");
     source.file("MasterData.xml", sourceMasterData);
-
-    const result = await buildGen4SetupWorkProject(source, analysis);
     const sourceXml = await source.file("MasterData.xml")?.async("text");
-    const outputXml = await result.zip.file("MasterData.xml")?.async("text");
 
     expect(sourceXml).toContain("<WorkDescriptor ");
+
+    const result = await buildGen4SetupWorkProject(source, analysis);
+    const outputXml = await result.zip.file("MasterData.xml")?.async("text");
     expect(outputXml).not.toContain("WorkDescriptor");
     expect(outputXml).not.toContain("<Operator");
     expect(outputXml).not.toContain("<ABLine");
