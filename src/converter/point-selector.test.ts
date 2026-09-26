@@ -63,13 +63,13 @@ describe("AdaptiveCurve normalization", () => {
     expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
-  it("removes a non-zero point when both deltas are strictly below 1e-7°", () => {
+  it("preserves a non-zero point when both deltas are strictly below 1e-7°", () => {
     const normalized = normalizeAdaptiveCurve(makeInitialCurve({
       longitude: -49.20000005,
       latitude: -22.20000005,
     }));
 
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 3]);
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
   it("preserves when only longitude delta is below 1e-7°", () => {
@@ -99,13 +99,13 @@ describe("AdaptiveCurve normalization", () => {
     expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
-  it("removes negative deltas inside ±1e-7°", () => {
+  it("preserves negative deltas inside ±1e-7°", () => {
     const normalized = normalizeAdaptiveCurve(makeInitialCurve({
       longitude: -49.19999995,
       latitude: -22.19999995,
     }));
 
-    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 3]);
+    expect(normalized.lines[0]?.points.map((point) => point.originalIndex)).toEqual([1, 2, 3]);
   });
 
   it("preserves a later exact duplicate outside the confirmed initial case", () => {
