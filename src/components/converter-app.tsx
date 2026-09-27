@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import {
   CheckCircle2,
   Download,
@@ -41,8 +41,6 @@ const stages: Array<{
 ];
 
 export function ConverterApp() {
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const [file, setFile] = useState<File>();
   const [conversionMode, setConversionMode] = useState<ConversionMode>();
   const [stage, setStage] = useState<ConversionStage>("idle");
@@ -398,24 +396,8 @@ export function ConverterApp() {
             </button>
           </div>
 
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() =>
-              !isBusy &&
-              conversionMode &&
-              inputRef.current?.click()
-            }
-            onKeyDown={(event) => {
-              if (
-                !isBusy &&
-                conversionMode &&
-                (event.key === "Enter" ||
-                  event.key === " ")
-              ) {
-                inputRef.current?.click();
-              }
-            }}
+          <label
+            htmlFor="gen4-project-file"
             onDragOver={(event) => {
               event.preventDefault();
 
@@ -430,13 +412,14 @@ export function ConverterApp() {
             } ${isBusy ? "cursor-wait opacity-80" : ""}`}
           >
             <input
-              ref={inputRef}
+              id="gen4-project-file"
               type="file"
               accept=".zip,application/zip"
               className="sr-only"
               onChange={(event) =>
                 selectFile(event.target.files?.[0])
               }
+              disabled={isBusy || !conversionMode}
             />
 
             {isBusy ? (
@@ -455,8 +438,7 @@ export function ConverterApp() {
               Arraste o arquivo aqui ou clique para selecionar ·
               somente .zip
             </p>
-          </div>
-        </section>
+          </label>       </section>
 
         {file && (
           <section className="glass mt-6 p-6">
