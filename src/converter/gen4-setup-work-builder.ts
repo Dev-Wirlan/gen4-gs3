@@ -26,7 +26,7 @@ function promoteToSetupWorkSchema(xml: string): string {
     return tag.replace(">", ' xmlns:core="urn:schemas-johndeere-com:SetupCore">');
   });
 
-  result = result.replace(/<SourceApp\b[^>]*\\/>/i, (tag) => {
+  result = result.replace(/<SourceApp\b[^>]*\/>/i, (tag) => {
     let next = tag;
     next = setXmlAttribute(next, "major", "11");
     next = setXmlAttribute(next, "minor", "3");
