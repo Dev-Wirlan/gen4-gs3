@@ -8,6 +8,65 @@ export interface Gen4SetupWorkBuildResult {
   warnings: string[];
 }
 
+function setXmlAttribute(tag: string, name: string, value: string): string {
+  const attribute = new RegExp(`\\\\b${name}="[^"]*"`, "i");
+  if (attribute.test(tag)) {
+    return tag.replace(attribute, `${name}="${value}"`);
+  }
+
+  const closingIndex = tag.endsWith("/>") ? tag.length - 2 : tag.length - 1;
+  return `${tag.slice(0, closingIndex)} ${name}="${value}"${tag.slice(closingIndex)}`;
+}
+
+function promoteToSetupWorkSchema(xml: string): string {
+  let result = xml;
+
+  result = result.replace(/<SetupFile\\b[^>]*>/i, (tag) => {
+    if (/xmlns:core="/i.test(tag)) return tag;
+    return tag.replace(">", ' xmlns:core="urn:schemas-johndeere-com:SetupCore">');
+  });
+
+  result = result.replace(/<SourceApp\\b[^>]*\\/>/i, (tag) => {
+    let next = tag;
+    next = setXmlAttribute(next, "major", "11");
+    next = setXmlAttribute(next, "minor", "3");
+    next = setXmlAttribute(next, "build", "4160");
+    next = setXmlAttribute(next, "revision", "52");
+    next = setXmlAttribute(next, "nameSourceApp", "G5 Plus Universal");
+    return next;
+  });
+
+  result = result.replace(/<FileSchemaContentVersion\\b[^>]*>/i, (tag) => {
+    let next = tag;
+    next = setXmlAttribute(next, "major", "2");
+    next = setXmlAttribute(next, "minor", "54");
+    return next;
+  });
+
+  result = result.replace(/<UnitOfMeasureVersion\\b[^>]*>/i, (tag) => {
+    let next = tag;
+    next = setXmlAttribute(next, "major", "1");
+    next = setXmlAttribute(next, "minor", "173");
+    return next;
+  });
+
+  result = result.replace(/<RepresentationSystemVersion\\b[^>]*>/i, (tag) => {
+    let next = tag;
+    next = setXmlAttribute(next, "major", "4");
+    next = setXmlAttribute(next, "minor", "1287");
+    return next;
+  });
+
+  if (!result.includes("<core:VersionDelimiter>")) {
+    result = result.replace(/<Implement\\b[^>]*>/gi, (tag) => `${tag}
+   <core:VersionDelimiter>2.54</core:VersionDelimiter>`);
+    result = result.replace(/<\\/Implement>/gi, `<core:VersionsEnd>2.54</core:VersionsEnd>
+  </Implement>`);
+  }
+
+  return result;
+}
+
 function findMasterDataPath(source: JSZip): string | undefined {
   return Object.keys(source.files).find((path) => /(^|\/)masterdata\.xml$/i.test(path));
 }
@@ -254,7 +313,8 @@ export async function buildGen4SetupWorkProject(
 
   const masterDataXml = await masterDataFile.async("text");
   const transformed = removeWorkDescriptors(masterDataXml);
-  output.file(masterDataPath, transformed.xml);
+  const setupWorkXml = promoteToSetupWorkSchema(transformed.xml);
+  output.file(masterDataPath, setupWorkXml);
 
   return {
     zip: output,
