@@ -245,7 +245,7 @@ export function ConverterApp() {
     }
   };
 
-  const drop = (event: DragEvent<HTMLDivElement>) => {
+  const drop = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
     setDragging(false);
     selectFile(event.dataTransfer.files[0]);
