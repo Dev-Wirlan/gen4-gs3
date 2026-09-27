@@ -321,9 +321,9 @@ export async function buildGen4SetupWorkProject(
     masterDataPath,
     removedWorkDescriptors: transformed.removed,
     warnings: [
-      "A transformação mínima preserva entidades e SpatialFiles de entrada.",
+      "A transformação preserva as entidades e SpatialFiles de entrada.",
       "Entidades adicionais observadas somente no Golden Setup Work não são inventadas.",
-      "Os valores de versionamento do Golden não são aplicados porque a regra universal ainda é desconhecida.",
+      "O MasterData é promovido para o esquema observado no Setup Work 600058: SetupCore, SourceApp G5 Plus Universal e versões 2.54/1.173/4.1287.",
     ],
   };
 }
