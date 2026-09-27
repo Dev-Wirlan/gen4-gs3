@@ -77,7 +77,11 @@ function readElementName(tag: string, closing: boolean): string {
 
   const start = index;
 
-  while (index < tag.length && !/[\s/>]/.test(tag[index])) {
+  while (index < tag.length) {
+    const character = tag[index];
+    if (character === undefined || /[\s/>]/.test(character)) {
+      break;
+    }
     index += 1;
   }
 
@@ -224,7 +228,19 @@ export async function buildGen4SetupWorkProject(
   source: JSZip,
   _analysis: ProjectAnalysis,
 ): Promise<Gen4SetupWorkBuildResult> {
-  const output = source.clone();
+  const output = new JSZip();
+  await Promise.all(
+    Object.values(source.files).map(async (entry) => {
+      if (entry.dir) {
+        output.folder(entry.name);
+        return;
+      }
+
+      output.file(entry.name, await entry.async("uint8array"), {
+        date: entry.date,
+      });
+    }),
+  );
   const masterDataPath = findMasterDataPath(output);
 
   if (!masterDataPath) {
