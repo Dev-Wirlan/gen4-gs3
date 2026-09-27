@@ -9,7 +9,7 @@ export interface Gen4SetupWorkBuildResult {
 }
 
 function setXmlAttribute(tag: string, name: string, value: string): string {
-  const attribute = new RegExp(`\\\\b${name}="[^"]*"`, "i");
+  const attribute = new RegExp(`\\b${name}="[^"]*"`, "i");
   if (attribute.test(tag)) {
     return tag.replace(attribute, `${name}="${value}"`);
   }
@@ -21,12 +21,12 @@ function setXmlAttribute(tag: string, name: string, value: string): string {
 function promoteToSetupWorkSchema(xml: string): string {
   let result = xml;
 
-  result = result.replace(/<SetupFile\\b[^>]*>/i, (tag) => {
+  result = result.replace(/<SetupFile\b[^>]*>/i, (tag) => {
     if (/xmlns:core="/i.test(tag)) return tag;
     return tag.replace(">", ' xmlns:core="urn:schemas-johndeere-com:SetupCore">');
   });
 
-  result = result.replace(/<SourceApp\\b[^>]*\\/>/i, (tag) => {
+  result = result.replace(/<SourceApp\b[^>]*\\/>/i, (tag) => {
     let next = tag;
     next = setXmlAttribute(next, "major", "11");
     next = setXmlAttribute(next, "minor", "3");
@@ -36,21 +36,21 @@ function promoteToSetupWorkSchema(xml: string): string {
     return next;
   });
 
-  result = result.replace(/<FileSchemaContentVersion\\b[^>]*>/i, (tag) => {
+  result = result.replace(/<FileSchemaContentVersion\b[^>]*>/i, (tag) => {
     let next = tag;
     next = setXmlAttribute(next, "major", "2");
     next = setXmlAttribute(next, "minor", "54");
     return next;
   });
 
-  result = result.replace(/<UnitOfMeasureVersion\\b[^>]*>/i, (tag) => {
+  result = result.replace(/<UnitOfMeasureVersion\b[^>]*>/i, (tag) => {
     let next = tag;
     next = setXmlAttribute(next, "major", "1");
     next = setXmlAttribute(next, "minor", "173");
     return next;
   });
 
-  result = result.replace(/<RepresentationSystemVersion\\b[^>]*>/i, (tag) => {
+  result = result.replace(/<RepresentationSystemVersion\b[^>]*>/i, (tag) => {
     let next = tag;
     next = setXmlAttribute(next, "major", "4");
     next = setXmlAttribute(next, "minor", "1287");
@@ -58,9 +58,9 @@ function promoteToSetupWorkSchema(xml: string): string {
   });
 
   if (!result.includes("<core:VersionDelimiter>")) {
-    result = result.replace(/<Implement\\b[^>]*>/gi, (tag) => `${tag}
+    result = result.replace(/<Implement\b[^>]*>/gi, (tag) => `${tag}
    <core:VersionDelimiter>2.54</core:VersionDelimiter>`);
-    result = result.replace(/<\\/Implement>/gi, `<core:VersionsEnd>2.54</core:VersionsEnd>
+    result = result.replace(/<\/Implement>/gi, `<core:VersionsEnd>2.54</core:VersionsEnd>
   </Implement>`);
   }
 
