@@ -414,6 +414,7 @@ export function ConverterApp() {
             <input
               id="gen4-project-file"
               type="file"
+              accept=".zip"
               className="sr-only"
               onChange={(event) =>
                 selectFile(event.target.files?.[0])
