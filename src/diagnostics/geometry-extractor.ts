@@ -65,8 +65,10 @@ export interface GeometryExtractionReport {
 }
 
 export interface GeometryExtractionResult {
-  adaptiveCurvesGeometry: AdaptiveCurveGeometryFile;
-  pointSequence: PointSequenceEntry[];
+  gen4AdaptiveCurvesGeometry: AdaptiveCurveGeometryFile;
+  setupWorkAdaptiveCurvesGeometry: AdaptiveCurveGeometryFile;
+  gen4PointSequence: PointSequenceEntry[];
+  setupWorkPointSequence: PointSequenceEntry[];
   mappingGeometry: GeometryMappingEntry[];
   report: GeometryExtractionReport;
 }
@@ -336,11 +338,16 @@ export async function extractP3Geometry(
 
   if (!gen4 || !setup) {
     return {
-      adaptiveCurvesGeometry: {
-        adaptiveCurveId: gen4?.id ?? setup?.id ?? "",
+      gen4AdaptiveCurvesGeometry: {
+        adaptiveCurveId: gen4?.id ?? "",
         lineStrings: [],
       },
-      pointSequence: [],
+      setupWorkAdaptiveCurvesGeometry: {
+        adaptiveCurveId: setup?.id ?? "",
+        lineStrings: [],
+      },
+      gen4PointSequence: [],
+      setupWorkPointSequence: [],
       mappingGeometry: [],
       report: {
         status: "error",
@@ -358,11 +365,10 @@ export async function extractP3Geometry(
   const setupPoints = setup.geometry.lines.reduce((sum, line) => sum + line.points.length, 0);
 
   return {
-    adaptiveCurvesGeometry: toGeometryFile(setup.id, setup.geometry),
-    pointSequence: [
-      ...toPointSequence(gen4.id, gen4.geometry),
-      ...toPointSequence(setup.id, setup.geometry),
-    ],
+    gen4AdaptiveCurvesGeometry: toGeometryFile(gen4.id, gen4.geometry),
+    setupWorkAdaptiveCurvesGeometry: toGeometryFile(setup.id, setup.geometry),
+    gen4PointSequence: toPointSequence(gen4.id, gen4.geometry),
+    setupWorkPointSequence: toPointSequence(setup.id, setup.geometry),
     mappingGeometry: mapLines(gen4.geometry, setup.geometry),
     report: {
       status: "ok",
@@ -384,12 +390,20 @@ export async function createGeometryExtractionZip(
   const output = new JSZip();
 
   output.file(
-    "adaptive_curves_geometry.json",
-    JSON.stringify(result.adaptiveCurvesGeometry, null, 2),
+    "gen4/adaptive_curves_geometry.json",
+    JSON.stringify(result.gen4AdaptiveCurvesGeometry, null, 2),
   );
   output.file(
-    "point_sequence.json",
-    JSON.stringify(result.pointSequence, null, 2),
+    "setupwork/adaptive_curves_geometry.json",
+    JSON.stringify(result.setupWorkAdaptiveCurvesGeometry, null, 2),
+  );
+  output.file(
+    "gen4/point_sequence.json",
+    JSON.stringify(result.gen4PointSequence, null, 2),
+  );
+  output.file(
+    "setupwork/point_sequence.json",
+    JSON.stringify(result.setupWorkPointSequence, null, 2),
   );
   output.file(
     "mapping_geometry.json",
