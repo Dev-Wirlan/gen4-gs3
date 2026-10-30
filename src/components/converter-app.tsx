@@ -298,104 +298,74 @@ export function ConverterApp() {
   };
 
   return (
-    <div className="min-h-screen bg-mesh text-foreground">
-      <header className="glass slash-r sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 px-5 py-3 md:px-8">
-        <div className="flex items-center gap-3">
-          <div
-            className="brand-mark"
-            aria-label="John Deere"
-            role="img"
-          >
-            <img
-              src="/john-deere-logo.png"
-              alt=""
-              aria-hidden="true"
-            />
+    <div className="jd-bg min-h-screen text-foreground">
+      <header className="jd-header sticky top-0 z-20">
+        <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-3 md:px-8">
+          <div className="flex items-center gap-3">
+            <div className="brand-mark" aria-label="John Deere" role="img">
+              <img src="/john-deere-logo.png" alt="" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">
+                Gen4 <span className="text-primary">→</span> GS3
+              </p>
+              <p className="font-mono text-[10px] text-muted-foreground">
+                conversão local John Deere
+              </p>
+            </div>
           </div>
 
-          <div>
-            <p className="text-sm font-semibold">
-              John Deere Gen4 Converter
-            </p>
+          <nav aria-label="Navegação principal" className="order-3 flex w-full gap-1 overflow-x-auto md:order-none md:w-auto">
+            <span className="jd-nav jd-nav-active" aria-current="page">Converter</span>
+            {["Histórico", "Configurações", "Ajuda"].map((item) => (
+              <span key={item} className="jd-nav" aria-disabled="true" title="Indisponível nesta versão">
+                {item}
+              </span>
+            ))}
+          </nav>
 
-            <p className="font-mono text-[10px] text-muted-foreground">
-              conversão local de projetos John Deere
-            </p>
+          <div className="flex items-center gap-2">
+            <span className="status-chip status-good hidden sm:inline-flex">
+              <Lock /> LOCAL · OFFLINE
+            </span>
+            <button type="button" className="jd-icon-btn" disabled aria-label="Tema (indisponível nesta versão)" title="Tema escuro fixo nesta versão">
+              <Moon className="size-4" />
+            </button>
           </div>
-        </div>
-
-        <div className="hidden items-center gap-2 sm:flex">
-          <span className="status-chip status-good">
-            <Lock /> ARQUIVOS LOCAIS
-          </span>
-
-          <span className="status-chip status-primary">
-            PWA · OFFLINE
-          </span>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl px-5 py-10 md:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="section-kicker">
-            Conversor John Deere
-          </p>
-
-          <h1 className="mt-4 text-4xl font-bold leading-tight md:text-5xl">
-            John Deere Gen4 Converter
+      <main className="mx-auto w-full max-w-7xl px-5 py-10 md:px-8">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <div className="lg:pt-8">
+          <span className="jd-badge">CONVERSOR</span>
+          <h1 className="mt-5 text-5xl font-bold leading-none tracking-tight md:text-7xl">
+            Gen4 <span className="text-primary">→</span>{" "}
+            <span className="text-primary">GS3</span>
           </h1>
-
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-            Escolha o tipo de conversão que deseja realizar.
+          <p className="mt-5 max-w-md text-sm leading-6 text-muted-foreground md:text-base">
+            Converta projetos John Deere Gen4/GS4 diretamente no navegador,
+            preservando os vínculos reais entre Field e AdaptiveCurves.
           </p>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {[
+              { icon: Zap, title: "Rápido", text: "Processamento imediato" },
+              { icon: ShieldCheck, title: "Seguro", text: "Nada sai do dispositivo" },
+              { icon: Crosshair, title: "Preciso", text: "Vínculo por GUID" },
+            ].map(({ icon: Icon, title, text }) => (
+              <li key={title} className="jd-benefit">
+                <Icon className="size-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold">{title}</p>
+                  <p className="text-xs text-muted-foreground">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <section className="glass mt-8 p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() =>
-                resetForMode("GEN4_TO_SETUP_WORK")
-              }
-              className={`rounded-lg border p-5 text-left transition-colors ${
-                conversionMode === "GEN4_TO_SETUP_WORK"
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-background/20 hover:border-primary/50"
-              }`}
-            >
-              <p className="text-sm font-semibold">
-                Gen4 Normal → Gen4 Setup Work
-              </p>
-
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Converte um projeto Gen4/GS4 normal para o
-                formato Gen4 Setup Work.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() =>
-                resetForMode("GEN4_SETUP_WORK_TO_GS3")
-              }
-              className={`rounded-lg border p-5 text-left transition-colors ${
-                conversionMode === "GEN4_SETUP_WORK_TO_GS3"
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-background/20 hover:border-primary/50"
-              }`}
-            >
-              <p className="text-sm font-semibold">
-                Gen4 Setup Work → GS3
-              </p>
-
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Converte um projeto Gen4 Setup Work para GS3.
-              </p>
-            </button>
-          </div>
-
+        <section className="jd-panel overflow-hidden">
+          <div className="p-5 md:p-6">
           <label
             htmlFor="gen4-project-file"
             onDragOver={(event) => {
@@ -407,7 +377,7 @@ export function ConverterApp() {
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={drop}
-            className={`drop-zone mt-8 min-h-56 ${
+            className={`drop-zone min-h-72 ${
               dragging ? "drop-active" : ""
             } ${isBusy ? "cursor-wait opacity-80" : ""}`}
           >
@@ -423,22 +393,82 @@ export function ConverterApp() {
             />
 
             {isBusy ? (
-              <LoaderCircle className="size-12 animate-spin text-primary" />
+              <LoaderCircle className="size-14 animate-spin text-primary" />
             ) : (
-              <Upload className="size-12 text-primary" />
+              <CloudUpload className="size-14 text-primary" />
             )}
 
-            <p className="mt-4 text-base font-semibold">
-              {conversionMode
-                ? "Selecione seu projeto Gen4/GS4"
-                : "Selecione primeiro o tipo de conversão"}
+            <p className="mt-4 text-lg font-semibold">
+              {file
+                ? file.name
+                : conversionMode
+                  ? "Arraste seu projeto Gen4/GS4 aqui"
+                  : "Selecione primeiro o tipo de conversão abaixo"}
             </p>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              Arraste o arquivo aqui ou clique para selecionar ·
-              somente .zip
+            <p className="mt-1 text-sm text-muted-foreground">
+              ou clique para selecionar o arquivo
             </p>
-          </label>       </section>
+            <p className="mt-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              Formatos suportados: <span className="text-primary">.zip</span> (projeto Gen4/GS4 · Setup Work)
+            </p>
+          </label>
+          </div>
+
+          <div className="jd-strip">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {([
+                ["GEN4_TO_SETUP_WORK", "Gen4 Normal → Gen4 Setup Work", "Converte um projeto Gen4/GS4 normal para Setup Work."],
+                ["GEN4_SETUP_WORK_TO_GS3", "Gen4 Setup Work → GS3", "Converte um projeto Gen4 Setup Work para GS3."],
+              ] as const).map(([mode, title, text]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => resetForMode(mode)}
+                  aria-pressed={conversionMode === mode}
+                  className={`rounded-md border p-3 text-left transition-colors ${
+                    conversionMode === mode
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-background/30 hover:border-primary/50"
+                  }`}
+                >
+                  <p className="text-sm font-semibold">{title}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground" aria-disabled="true" title="Indisponível nesta versão">
+                <SlidersHorizontal className="size-4" /> Opções avançadas · indisponível
+              </span>
+              <button
+                type="button"
+                onClick={() => void convert()}
+                disabled={
+                  isBusy ||
+                  !conversionMode ||
+                  needsFieldSelection ||
+                  !file ||
+                  stage === "complete"
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Play className="size-4" />
+                )}
+                {needsFieldSelection
+                  ? "Selecione um Field"
+                  : "Iniciar Conversão"}
+              </button>
+            </div>
+          </div>
+        </section>
+        </div>
+        <div className="mx-auto max-w-4xl">
 
         {file && (
           <section className="glass mt-6 p-6">
@@ -594,34 +624,7 @@ export function ConverterApp() {
                     : "Baixar projeto GS3"}
                 </a>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void convert()}
-                disabled={
-                  isBusy ||
-                  !conversionMode ||
-                  needsFieldSelection ||
-                  !file
-                }
-                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60"
-              >
-                {isBusy ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <Download className="size-4" />
-                )}
-
-                {needsFieldSelection
-                  ? "Selecione um Field"
-                  : conversionMode === "GEN4_TO_SETUP_WORK"
-                    ? "Converter para Setup Work"
-                    : conversionMode ===
-                        "GEN4_SETUP_WORK_TO_GS3"
-                      ? "Converter para GS3"
-                      : "Selecione o tipo de conversão"}
-              </button>
-            )}
+            ) : null}
           </section>
         )}
 
