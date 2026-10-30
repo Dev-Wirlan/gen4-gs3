@@ -315,8 +315,8 @@ export function ConverterApp() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-5 py-10 md:px-8">
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-          <div className="lg:pt-8">
+        <div className="flex w-full flex-col gap-6 lg:w-[52%]">
+          <div className="jd-panel p-6 md:p-8">
             <span className="jd-badge">CONVERSOR</span>
             <h1 className="mt-5 text-5xl font-bold leading-none tracking-tight md:text-7xl">
               Gen4 <span className="text-primary">→</span> <span className="text-primary">GS3</span>
@@ -325,7 +325,7 @@ export function ConverterApp() {
               Converta projetos John Deere Gen4/GS4 diretamente no navegador, preservando os
               vínculos reais entre Field e AdaptiveCurves.
             </p>
-            <ul className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <ul className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
                 { icon: Zap, title: "Rápido", text: "Processamento imediato" },
                 { icon: ShieldCheck, title: "Seguro", text: "Nada sai do dispositivo" },
@@ -457,7 +457,7 @@ export function ConverterApp() {
             </div>
           </section>
         </div>
-        <div className="mx-auto max-w-4xl">
+        <div className="w-full lg:w-[52%]">
           {file && (
             <section className="glass mt-6 p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
