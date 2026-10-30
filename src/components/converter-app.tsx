@@ -5,7 +5,13 @@ import {
   FileArchive,
   LoaderCircle,
   Lock,
-  Upload,
+  CloudUpload,
+  Crosshair,
+  Moon,
+  Play,
+  ShieldCheck,
+  SlidersHorizontal,
+  Zap,
 } from "lucide-react";
 
 import { analyzeGen4Project } from "@/converter/gen4-parser";
@@ -659,6 +665,7 @@ export function ConverterApp() {
             Desenvolvido por Dev-Wirlan
           </p>
         </footer>
+        </div>
       </main>
     </div>
   );
