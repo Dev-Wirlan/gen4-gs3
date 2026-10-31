@@ -285,16 +285,6 @@ export function ConverterApp() {
             <span className="jd-nav jd-nav-active" aria-current="page">
               Converter
             </span>
-            {["Histórico", "Configurações", "Ajuda"].map((item) => (
-              <span
-                key={item}
-                className="jd-nav"
-                aria-disabled="true"
-                title="Indisponível nesta versão"
-              >
-                {item}
-              </span>
-            ))}
           </nav>
 
           <div className="flex items-center gap-2">
