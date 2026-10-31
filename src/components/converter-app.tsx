@@ -263,13 +263,13 @@ export function ConverterApp() {
   return (
     <div className="jd-bg min-h-screen text-foreground">
       <header className="jd-header sticky top-0 z-20">
-        <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-3 md:px-8">
-          <div className="flex items-center gap-3">
-            <div className="brand-mark" aria-label="John Deere" role="img">
+        <div className="mx-auto grid min-h-16 w-full max-w-4xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="brand-mark shrink-0" aria-label="John Deere" role="img">
               <img src="/john-deere-logo.png" alt="" aria-hidden="true" />
             </div>
-            <div>
-              <p className="text-sm font-bold">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">
                 Gen4 <span className="text-primary">→</span> GS3
               </p>
               <p className="font-mono text-[10px] text-muted-foreground">
@@ -280,14 +280,14 @@ export function ConverterApp() {
 
           <nav
             aria-label="Navegação principal"
-            className="order-3 flex w-full gap-1 overflow-x-auto md:order-none md:w-auto"
+            className="order-3 col-span-2 flex min-w-0 justify-center gap-1 sm:order-none sm:col-span-1"
           >
             <span className="jd-nav jd-nav-active" aria-current="page">
               Converter
             </span>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-2">
             <span className="status-chip status-good hidden sm:inline-flex">
               <Lock /> LOCAL · OFFLINE
             </span>
@@ -304,14 +304,14 @@ export function ConverterApp() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-5 py-10 md:px-8">
-        <div className="flex w-full flex-col gap-6 lg:w-[52%]">
-          <div className="jd-panel p-6 md:p-8">
+      <main className="mx-auto w-full max-w-4xl px-5 py-8 md:px-8 md:py-10">
+        <div className="flex w-full min-w-0 flex-col gap-6">
+          <div className="jd-panel p-6 text-center md:p-8">
             <span className="jd-badge">CONVERSOR</span>
             <h1 className="mt-5 text-5xl font-bold leading-none tracking-tight md:text-7xl">
               Gen4 <span className="text-primary">→</span> <span className="text-primary">GS3</span>
             </h1>
-            <p className="mt-5 max-w-md text-sm leading-6 text-muted-foreground md:text-base">
+            <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-muted-foreground md:text-base">
               Converta projetos John Deere Gen4/GS4 diretamente no navegador, preservando os
               vínculos reais entre Field e AdaptiveCurves.
             </p>
@@ -321,9 +321,9 @@ export function ConverterApp() {
                 { icon: ShieldCheck, title: "Seguro", text: "Nada sai do dispositivo" },
                 { icon: Crosshair, title: "Preciso", text: "Vínculo por GUID" },
               ].map(({ icon: Icon, title, text }) => (
-                <li key={title} className="jd-benefit">
-                  <Icon className="size-5 text-primary" />
-                  <div>
+                <li key={title} className="jd-benefit justify-center">
+                  <Icon className="size-5 shrink-0 text-primary" />
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold">{title}</p>
                     <p className="text-xs text-muted-foreground">{text}</p>
                   </div>
@@ -364,7 +364,7 @@ export function ConverterApp() {
                   <CloudUpload className="size-14 text-primary" />
                 )}
 
-                <p className="mt-4 text-lg font-semibold">
+                <p className="mt-4 max-w-full break-all text-lg font-semibold">
                   {file
                     ? file.name
                     : conversionMode
@@ -404,7 +404,7 @@ export function ConverterApp() {
                     disabled={isBusy}
                     onClick={() => resetForMode(mode)}
                     aria-pressed={conversionMode === mode}
-                    className={`rounded-md border p-3 text-left transition-colors ${
+                    className={`min-w-0 rounded-md border p-3 text-center transition-colors ${
                       conversionMode === mode
                         ? "border-primary bg-primary/10"
                         : "border-border bg-background/30 hover:border-primary/50"
@@ -416,7 +416,7 @@ export function ConverterApp() {
                 ))}
               </div>
 
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <span
                   className="inline-flex items-center gap-2 text-xs text-muted-foreground"
                   aria-disabled="true"
@@ -447,10 +447,10 @@ export function ConverterApp() {
             </div>
           </section>
         </div>
-        <div className="w-full lg:w-[52%]">
+        <div className="w-full min-w-0 text-center">
           {file && (
             <section className="glass mt-6 p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col items-center justify-center gap-4">
                 <div className="min-w-0">
                   <p className="section-kicker">Projeto selecionado</p>
 
@@ -479,11 +479,11 @@ export function ConverterApp() {
                     real do Field selecionado.
                   </p>
 
-                  <div className="mt-4 space-y-2">
+                  <div className="mx-auto mt-4 max-w-xl space-y-2">
                     {candidateFields.map(({ field, clientName, farmName }) => (
                       <label
                         key={field.id}
-                        className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3 hover:border-primary/50"
+                        className="flex cursor-pointer items-start justify-center gap-3 rounded-md border border-border p-3 hover:border-primary/50"
                       >
                         <input
                           type="radio"
@@ -491,7 +491,7 @@ export function ConverterApp() {
                           value={field.id}
                           checked={selectedFieldId === field.id}
                           onChange={() => setSelectedFieldId(field.id)}
-                          className="mt-1"
+                          className="mt-1 shrink-0"
                         />
 
                         <span className="min-w-0 text-sm">
@@ -527,7 +527,7 @@ export function ConverterApp() {
                   return (
                     <div
                       key={item.key}
-                      className={`flex items-center gap-3 rounded-md border px-4 py-3 text-sm ${
+                      className={`flex items-center justify-center gap-3 rounded-md border px-4 py-3 text-sm ${
                         active
                           ? "border-primary/50 bg-primary/10 text-primary"
                           : done
@@ -559,7 +559,7 @@ export function ConverterApp() {
                       : "Projeto GS3 pronto"}
                   </h3>
 
-                  <p className="mt-1 text-xs text-muted-foreground">{outputName}</p>
+                   <p className="mt-1 break-all text-xs text-muted-foreground">{outputName}</p>
 
                   <a
                     href={downloadUrl}
@@ -578,7 +578,7 @@ export function ConverterApp() {
           )}
 
           {!file && (
-            <section className="glass empty-state mt-6">
+            <section className="glass empty-state mt-6 flex-col sm:flex-row">
               <FileArchive />
 
               <div>
@@ -590,7 +590,7 @@ export function ConverterApp() {
           )}
 
           {error && (
-            <div className="notice danger mt-6">
+            <div className="notice danger mt-6 justify-center">
               <span>{error}</span>
             </div>
           )}

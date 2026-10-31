@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the converter header and main content on the same responsive maximum-width container so all conversion states retain consistent alignment; visual layout changes must stay in presentation code.

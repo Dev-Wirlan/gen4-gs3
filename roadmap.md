@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Centralizar a interface do conversor e validar alinhamento em desktop, tablet e celular sem alterar a lógica.
+
 - [ ] Relacionar Cliente, Fazenda, Talhão e objetos espaciais por GUID/TaggedEntity
 - [ ] Separar ABLine e preservar objetos órfãos
 - [ ] Adicionar seleção de talhão e métricas de validação
