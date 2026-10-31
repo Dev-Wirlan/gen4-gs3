@@ -178,7 +178,9 @@
 }
 
 @utility jd-bg {
-  background: oklch(0.12 0 0);
+  background:
+    linear-gradient(180deg, oklch(0.1 0.02 150 / 58%), oklch(0.08 0.02 150 / 76%)),
+    url("/john-deere-background.jpg") center / cover no-repeat fixed;
 }
 
 @layer components {
