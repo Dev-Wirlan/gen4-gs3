@@ -1,12 +1,5 @@
 import { useEffect, useState, type DragEvent } from "react";
-import {
-  CheckCircle2,
-  Download,
-  FileArchive,
-  LoaderCircle,
-  CloudUpload,
-  Play,
-} from "lucide-react";
+import { CheckCircle2, Download, FileArchive, LoaderCircle, CloudUpload, Play } from "lucide-react";
 
 import { analyzeGen4Project } from "@/converter/gen4-parser";
 import { exportValidatedAdaptiveCurves } from "@/converter/zip-exporter";
@@ -527,7 +520,7 @@ export function ConverterApp() {
                       : "Projeto GS3 pronto"}
                   </h3>
 
-                   <p className="mt-1 break-all text-xs text-muted-foreground">{outputName}</p>
+                  <p className="mt-1 break-all text-xs text-muted-foreground">{outputName}</p>
 
                   <a
                     href={downloadUrl}
