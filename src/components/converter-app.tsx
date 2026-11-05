@@ -6,6 +6,7 @@ import {
   LoaderCircle,
   Lock,
   CloudUpload,
+  Layers,
   Crosshair,
   Moon,
   Play,
@@ -274,28 +275,13 @@ export function ConverterApp() {
             </div>
           </div>
 
-          <nav
-            aria-label="Navegação principal"
-            className="order-3 col-span-2 flex min-w-0 justify-center gap-1 sm:order-none sm:col-span-1"
-          >
-            <span className="jd-nav jd-nav-active" aria-current="page">
-              Converter
-            </span>
-          </nav>
+
 
           <div className="flex shrink-0 items-center justify-end gap-2">
             <span className="jd-online-status">
               <span className="jd-online-dot" /> Online
             </span>
-            <button
-              type="button"
-              className="jd-icon-btn"
-              disabled
-              aria-label="Tema (indisponível nesta versão)"
-              title="Tema escuro fixo nesta versão"
-            >
-              <Moon className="size-4" />
-            </button>
+
           </div>
         </div>
       </header>
@@ -314,7 +300,7 @@ export function ConverterApp() {
               <span><Layers /> Gen4 Setup Work</span>
               <span><Crosshair /> GS3</span>
             </div>
-          </section>>
+          </section>
 
           <section className="jd-converter">
             <div className="jd-mode-selector" aria-label="Tipo de conversão">
