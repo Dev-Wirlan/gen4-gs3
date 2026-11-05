@@ -178,9 +178,16 @@
 }
 
 @utility jd-bg {
-  background:
-    linear-gradient(180deg, oklch(0.08 0.02 150 / 70%), oklch(0.06 0.02 150 / 85%)),
-    url("/john-deere-background.jpg?v=06345eb") center / cover no-repeat fixed;
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: fixed;
+    inset: -2rem;
+    z-index: -1;
+    background: url("/john-deere-background.jpg?v=06345eb") center / cover no-repeat;
+    filter: blur(18px) brightness(0.5) saturate(0.95);
+  }
 }
 
 @layer components {
