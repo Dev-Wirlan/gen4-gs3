@@ -1,18 +1,13 @@
 import { useEffect, useState, type DragEvent } from "react";
 import {
   CheckCircle2,
-  Download,
   FileArchive,
   LoaderCircle,
-  Lock,
   CloudUpload,
   Layers,
   Crosshair,
-  Moon,
   Play,
-  ShieldCheck,
   SlidersHorizontal,
-  Zap,
 } from "lucide-react";
 
 import { analyzeGen4Project } from "@/converter/gen4-parser";
@@ -295,35 +290,30 @@ export function ConverterApp() {
             <p className="mx-auto mt-3 max-w-3xl text-base leading-7 text-white/90 md:text-lg">
               Converta projetos do Gen4 (Normal ou Setup Work) para o formato GS3
             </p>
-            <div className="jd-format-pills" aria-label="Formatos de origem e destino">
-              <span><SlidersHorizontal /> Gen4 Normal</span>
-              <span><Layers /> Gen4 Setup Work</span>
+            <div className="jd-format-pills" aria-label="Selecione o tipo de conversão">
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => resetForMode("GEN4_TO_SETUP_WORK")}
+                aria-pressed={conversionMode === "GEN4_TO_SETUP_WORK"}
+                className={`jd-mode-pill ${conversionMode === "GEN4_TO_SETUP_WORK" ? "is-selected" : ""}`}
+              >
+                <SlidersHorizontal /> Gen4 Normal
+              </button>
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => resetForMode("GEN4_SETUP_WORK_TO_GS3")}
+                aria-pressed={conversionMode === "GEN4_SETUP_WORK_TO_GS3"}
+                className={`jd-mode-pill ${conversionMode === "GEN4_SETUP_WORK_TO_GS3" ? "is-selected" : ""}`}
+              >
+                <Layers /> Gen4 Setup Work
+              </button>
               <span><Crosshair /> GS3</span>
             </div>
           </section>
 
           <section className="jd-converter">
-            <div className="jd-mode-selector" aria-label="Tipo de conversão">
-              {(
-                [
-                  ["GEN4_TO_SETUP_WORK", "Gen4 Normal", "Converte para Setup Work."],
-                  ["GEN4_SETUP_WORK_TO_GS3", "Gen4 Setup Work", "Converte para GS3."],
-                ] as const
-              ).map(([mode, title, description]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => resetForMode(mode)}
-                  aria-pressed={conversionMode === mode}
-                  className={`jd-mode-pill ${conversionMode === mode ? "is-selected" : ""}`}
-                >
-                  {title}
-                  <span>{description}</span>
-                </button>
-              ))}
-            </div>
-
             <div className="jd-upload-card">
               <label
                 htmlFor="gen4-project-file"
