@@ -180,7 +180,7 @@
 @utility jd-bg {
   background:
     linear-gradient(180deg, oklch(0.1 0.02 150 / 58%), oklch(0.08 0.02 150 / 76%)),
-    url("https://www.deere.com/assets/images/region-4/products/harvesting/sugar-cane-harvester/r4k071594_rrd-1024x576.jpg") center / cover no-repeat fixed;
+    url("/john-deere-background.jpg?v=06345eb") center / cover no-repeat fixed;
 }
 
 @layer components {
