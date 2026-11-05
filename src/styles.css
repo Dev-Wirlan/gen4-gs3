@@ -75,8 +75,8 @@
   --card-foreground: oklch(0.94 0.01 250);
   --popover: oklch(0.18 0.03 258);
   --popover-foreground: oklch(0.94 0.01 250);
-  --primary: oklch(0.52 0.16 150);
-  --primary-foreground: oklch(0.99 0 0);
+  --primary: oklch(0.86 0.17 95);
+  --primary-foreground: oklch(0.16 0.03 145);
   --secondary: oklch(0.68 0.16 150);
   --secondary-foreground: oklch(0.16 0.03 145);
   --muted: oklch(0.24 0.02 258);
@@ -87,7 +87,7 @@
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.9 0.02 240 / 14%);
   --input: oklch(0.9 0.02 240 / 18%);
-  --ring: oklch(0.52 0.16 150);
+  --ring: oklch(0.86 0.17 95);
   --highlight: oklch(0.68 0.16 150);
   --good: oklch(0.78 0.15 160);
   --pending: oklch(0.83 0.16 85);
@@ -114,8 +114,8 @@
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.52 0.16 150);
-  --primary-foreground: oklch(0.99 0 0);
+  --primary: oklch(0.86 0.17 95);
+  --primary-foreground: oklch(0.16 0.03 145);
   --secondary: oklch(0.68 0.16 150);
   --secondary-foreground: oklch(0.16 0.03 145);
   --muted: oklch(0.279 0.041 260.031);
@@ -126,7 +126,7 @@
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.52 0.16 150);
+  --ring: oklch(0.86 0.17 95);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -178,13 +178,25 @@
 }
 
 @utility jd-bg {
-  background:
-    linear-gradient(180deg, oklch(0.1 0.02 150 / 58%), oklch(0.08 0.02 150 / 76%)),
-    url("/john-deere-background.jpg?v=06345eb") center / cover no-repeat fixed;
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: fixed;
+    inset: -2rem;
+    z-index: -1;
+    background: url("/john-deere-background.jpg?v=06345eb") center / cover no-repeat;
+    filter: blur(18px) brightness(0.5) saturate(0.95);
+  }
 }
 
 @layer components {
   .jd-header { background:oklch(0.1 0.02 150 / 70%); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+  .jd-stripe { height:3px; background:var(--primary); }
+  .jd-dot { width:.45rem; height:.45rem; border-radius:999px; background:var(--good); box-shadow:0 0 8px var(--good); }
+  .jd-title { text-shadow:0 4px 24px oklch(0 0 0 / 60%); }
+  .jd-pill { font-size:.75rem; font-weight:600; padding:.3rem .8rem; border-radius:999px; border:1px solid color-mix(in oklab,var(--primary) 50%,transparent); background:oklch(0.1 0.02 150 / 60%); color:var(--primary); backdrop-filter:blur(8px); }
+  .jd-flow { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:.5rem; padding:.6rem 1rem; border-radius:999px; border:1px solid var(--border); background:oklch(0.1 0.02 150 / 60%); font-size:.8rem; font-weight:600; }
   .jd-nav { white-space:nowrap; padding:.45rem .8rem; border-radius:var(--radius); font-size:.8rem; color:var(--muted-foreground); }
   .jd-nav[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
   .jd-nav-active { color:var(--primary); background:color-mix(in oklab,var(--primary) 12%,transparent); font-weight:600; }

@@ -1,18 +1,5 @@
 import { useEffect, useState, type DragEvent } from "react";
-import {
-  CheckCircle2,
-  Download,
-  FileArchive,
-  LoaderCircle,
-  Lock,
-  CloudUpload,
-  Crosshair,
-  Moon,
-  Play,
-  ShieldCheck,
-  SlidersHorizontal,
-  Zap,
-} from "lucide-react";
+import { CheckCircle2, Download, FileArchive, LoaderCircle, CloudUpload, Play } from "lucide-react";
 
 import { analyzeGen4Project } from "@/converter/gen4-parser";
 import { exportValidatedAdaptiveCurves } from "@/converter/zip-exporter";
@@ -263,77 +250,46 @@ export function ConverterApp() {
   return (
     <div className="jd-bg min-h-screen text-foreground">
       <header className="jd-header sticky top-0 z-20">
-        <div className="mx-auto grid min-h-16 w-full max-w-4xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:px-8">
+        <div className="mx-auto flex min-h-16 w-full max-w-4xl items-center justify-between gap-3 px-5 py-3 md:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <div className="brand-mark shrink-0" aria-label="John Deere" role="img">
               <img src="/john-deere-logo.png" alt="" aria-hidden="true" />
             </div>
+            <span className="h-8 w-px shrink-0 bg-border" aria-hidden="true" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold">
-                Gen4 <span className="text-primary">→</span> GS3
-              </p>
-              <p className="font-mono text-[10px] text-muted-foreground">
+              <p className="truncate text-sm font-bold text-primary">Gen4 → GS3 Converter</p>
+              <p className="truncate font-mono text-[10px] text-muted-foreground">
                 conversão local John Deere
               </p>
             </div>
           </div>
-
-          <nav
-            aria-label="Navegação principal"
-            className="order-3 col-span-2 flex min-w-0 justify-center gap-1 sm:order-none sm:col-span-1"
-          >
-            <span className="jd-nav jd-nav-active" aria-current="page">
-              Converter
-            </span>
-          </nav>
-
-          <div className="flex shrink-0 items-center justify-end gap-2">
-            <span className="status-chip status-good hidden sm:inline-flex">
-              <Lock /> LOCAL · OFFLINE
-            </span>
-            <button
-              type="button"
-              className="jd-icon-btn"
-              disabled
-              aria-label="Tema (indisponível nesta versão)"
-              title="Tema escuro fixo nesta versão"
-            >
-              <Moon className="size-4" />
-            </button>
-          </div>
+          <span className="status-chip status-good shrink-0">
+            <span className="jd-dot" aria-hidden="true" /> Online
+          </span>
         </div>
       </header>
+      <div className="jd-stripe" aria-hidden="true" />
 
-      <main className="mx-auto w-full max-w-4xl px-5 py-8 md:px-8 md:py-10">
-        <div className="flex w-full min-w-0 flex-col gap-6">
-          <div className="jd-panel p-6 text-center md:p-8">
-            <span className="jd-badge">CONVERSOR</span>
-            <h1 className="mt-5 text-5xl font-bold leading-none tracking-tight md:text-7xl">
-              Gen4 <span className="text-primary">→</span> <span className="text-primary">GS3</span>
+      <main className="mx-auto w-full max-w-4xl px-5 py-10 md:px-8 md:py-14">
+        <div className="flex w-full min-w-0 flex-col items-center gap-6 text-center">
+          <div>
+            <h1 className="jd-title text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl">
+              Gen4 <span className="text-primary">→</span> GS3 Converter
             </h1>
-            <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-muted-foreground md:text-base">
-              Converta projetos John Deere Gen4/GS4 diretamente no navegador, preservando os
-              vínculos reais entre Field e AdaptiveCurves.
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-foreground/85 md:text-base">
+              Converta projetos do Gen4 (Normal ou Setup Work) para o formato GS3
             </p>
-            <ul className="mt-8 grid gap-3 sm:grid-cols-3">
-              {[
-                { icon: Zap, title: "Rápido", text: "Processamento imediato" },
-                { icon: ShieldCheck, title: "Seguro", text: "Nada sai do dispositivo" },
-                { icon: Crosshair, title: "Preciso", text: "Vínculo por GUID" },
-              ].map(({ icon: Icon, title, text }) => (
-                <li key={title} className="jd-benefit justify-center">
-                  <Icon className="size-5 shrink-0 text-primary" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">{title}</p>
-                    <p className="text-xs text-muted-foreground">{text}</p>
-                  </div>
+            <ul className="mt-5 flex flex-wrap justify-center gap-2">
+              {["Gen4 Normal", "Gen4 Setup Work", "GS3"].map((label) => (
+                <li key={label} className="jd-pill">
+                  {label}
                 </li>
               ))}
             </ul>
           </div>
 
-          <section className="jd-panel overflow-hidden">
-            <div className="p-5 md:p-6">
+          <section className="jd-panel w-full overflow-hidden">
+            <div className="p-4 md:p-6">
               <label
                 htmlFor="gen4-project-file"
                 onDragOver={(event) => {
@@ -345,7 +301,7 @@ export function ConverterApp() {
                 }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={drop}
-                className={`drop-zone min-h-72 ${
+                className={`drop-zone min-h-64 ${
                   dragging ? "drop-active" : ""
                 } ${isBusy ? "cursor-wait opacity-80" : ""}`}
               >
@@ -359,31 +315,33 @@ export function ConverterApp() {
                 />
 
                 {isBusy ? (
-                  <LoaderCircle className="size-14 animate-spin text-primary" />
+                  <LoaderCircle className="size-12 animate-spin text-primary" />
                 ) : (
-                  <CloudUpload className="size-14 text-primary" />
+                  <CloudUpload className="size-12 text-primary" />
                 )}
 
-                <p className="mt-4 max-w-full break-all text-lg font-semibold">
+                <p className="mt-4 max-w-full break-all text-base font-semibold md:text-lg">
                   {file
                     ? file.name
                     : conversionMode
-                      ? "Arraste seu projeto Gen4/GS4 aqui"
+                      ? "Arraste e solte o arquivo do projeto Gen4 aqui"
                       : "Selecione primeiro o tipo de conversão abaixo"}
                 </p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  ou clique para selecionar o arquivo
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">ou clique para selecionar</p>
+                <span
+                  className={`mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground ${
+                    !conversionMode || isBusy ? "opacity-50" : ""
+                  }`}
+                >
+                  <FileArchive className="size-4" /> Selecionar Projeto Gen4
+                </span>
                 <p className="mt-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Formatos suportados: <span className="text-primary">.zip</span> (projeto Gen4/GS4
-                  · Setup Work)
+                  Formatos aceitos: <span className="text-primary">.zip</span> (Gen4 Normal · Setup
+                  Work)
                 </p>
               </label>
-            </div>
 
-            <div className="jd-strip">
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 {(
                   [
                     [
@@ -416,14 +374,7 @@ export function ConverterApp() {
                 ))}
               </div>
 
-              <div className="mt-4 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <span
-                  className="inline-flex items-center gap-2 text-xs text-muted-foreground"
-                  aria-disabled="true"
-                  title="Indisponível nesta versão"
-                >
-                  <SlidersHorizontal className="size-4" /> Opções avançadas · indisponível
-                </span>
+              <div className="mt-4 flex justify-center">
                 <button
                   type="button"
                   onClick={() => void convert()}
@@ -443,6 +394,16 @@ export function ConverterApp() {
                   )}
                   {needsFieldSelection ? "Selecione um Field" : "Iniciar Conversão"}
                 </button>
+              </div>
+            </div>
+
+            <div className="jd-strip">
+              <div className="jd-flow">
+                <span>Gen4 Normal</span>
+                <span className="text-muted-foreground">ou</span>
+                <span>Gen4 Setup Work</span>
+                <span className="text-primary">→</span>
+                <span className="text-primary">GS3</span>
               </div>
             </div>
           </section>
@@ -559,7 +520,7 @@ export function ConverterApp() {
                       : "Projeto GS3 pronto"}
                   </h3>
 
-                   <p className="mt-1 break-all text-xs text-muted-foreground">{outputName}</p>
+                  <p className="mt-1 break-all text-xs text-muted-foreground">{outputName}</p>
 
                   <a
                     href={downloadUrl}
