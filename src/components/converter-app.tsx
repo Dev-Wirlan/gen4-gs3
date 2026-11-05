@@ -269,12 +269,8 @@ export function ConverterApp() {
               <img src="/john-deere-logo.png" alt="" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold">
-                Gen4 <span className="text-primary">→</span> GS3
-              </p>
-              <p className="font-mono text-[10px] text-muted-foreground">
-                conversão local John Deere
-              </p>
+              <p className="truncate text-sm font-bold tracking-wide">JOHN DEERE</p>
+              <p className="font-mono text-[10px] text-muted-foreground">Gen4 → GS3 Converter</p>
             </div>
           </div>
 
