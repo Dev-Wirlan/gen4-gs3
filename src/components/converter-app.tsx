@@ -1,6 +1,7 @@
 import { useEffect, useState, type DragEvent } from "react";
 import {
   CheckCircle2,
+  Download,
   FileArchive,
   LoaderCircle,
   CloudUpload,
